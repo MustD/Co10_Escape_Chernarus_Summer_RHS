@@ -576,7 +576,7 @@ waitUntil {scriptDone _scriptHandle};
 			
 			if(random 100 < 80) then {
 				removeAllPrimaryWeaponItems _unit;
-				
+				_unit addPrimaryWeaponItem "rhs_acc_dtk";
 			};
 			private["_hmd"];
 			_hmd = hmd _unit;

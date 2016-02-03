@@ -17,11 +17,11 @@ author = "NeoArmageddon and Scruffy";
 overviewPicture = "a3\Missions_F_Gamma\data\img\MP_COOP_m03_overview_CA.paa";
 overviewText = MISSIONNAMEFULL;
 onLoadName = MISSIONNAME;
-loadScreen = "escape_banner.paa"; 
+loadScreen = "escape_banner.paa";
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 Respawn = "INSTANT";
-RespawnDelay = 60;
+RespawnDelay = 20;
 disabledAI = 1;
 enableDebugConsole = 1;
 

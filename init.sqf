@@ -60,17 +60,17 @@ setTerrainGrid (Param_Grass);
 
 if (isServer) then {
     a3e_var_Escape_hoursSkipped = 0;
-    
+
     if (isMultiplayer) then {
         private ["_hour"];
-        
+
         if (Param_TimeOfDay == 24) then {
             _hour = floor random 24;
         }
         else {
             _hour = Param_TimeOfDay;
         };
-        
+
         a3e_var_Escape_hoursSkipped = _hour - (date select 3);
         publicVariable "a3e_var_Escape_hoursSkipped";
         setDate [date select 0, date select 1, date select 2, _hour, 0];
@@ -82,3 +82,32 @@ if (isServer) then {
 		} foreach units group player;
 	};
 };
+
+
+// reload gear
+waitUntil { !isNull player }; // Wait for player to initialize
+
+// Compile scripts
+getLoadout = compile preprocessFileLineNumbers 'get_loadout.sqf';
+setLoadout = compile preprocessFileLineNumbers 'set_loadout.sqf';
+
+// Save loadout (including ammo count) on kill
+player addEventHandler ["Killed",
+	{
+		savingLoadout = true;
+		loadout = [player, ["ammo"]] call getLoadout;
+		savingLoadout = false;
+	}
+];
+
+// Load saved loadout (including ammo count) on respawn
+player addEventHandler ["Respawn",
+	{
+		[player,loadout,["ammo"]] spawn setLoadout;
+		waitUntil {!savingLoadout};
+		deleteVehicle _this select 1;
+	}
+];
+
+
+call compile preprocessFileLineNumbers ("pdth\mr\init_repack_for_player.sqf");
