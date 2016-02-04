@@ -637,7 +637,7 @@ drn_fnc_Escape_FindSpawnSegment = {
 
     _isOk = false;
     _tries = 0;
-    while {!_isOk && _tries < 25} do {
+    while {!_isOk && _tries < 25 && !isNil "_refUnit"} do {
         _isOk = true;
 
         _dir = random 360;

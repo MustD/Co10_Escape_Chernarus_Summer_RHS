@@ -14,6 +14,7 @@ pdth_mr_time_repack_base = 2;
 pdth_mr_time_repack_class = 6;
 pdth_mr_anim_repack_start = "AinvPknlMstpSnonWrflDnon_medic0";
 pdth_mr_anim_repack_end = "AinvPknlMstpSnonWrflDnon_medicEnd";
+pdth_mr_repack_runs = false;
 
 pdth_mr_has_repack = compile preprocessFileLineNumbers "pdth\mr\has_repack.sqf";
 pdth_mr_do_repack = compile preprocessFileLineNumbers "pdth\mr\do_repack.sqf";

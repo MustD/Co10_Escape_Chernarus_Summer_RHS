@@ -33,7 +33,7 @@
 private ["_result", "_mags", "_nfMags", "_clName", "_magCount", "_fullMagCount"];
 
 _result = false;
-if (!isNull _this) then {
+if (!isNull _this && !pdth_mr_repack_runs && _this == vehicle _this) then {
 	_mags = magazinesAmmo _this;
 	if (count _mags > 0) then {
 		// _nfMags is simply an array containing class names of non-full magazines found

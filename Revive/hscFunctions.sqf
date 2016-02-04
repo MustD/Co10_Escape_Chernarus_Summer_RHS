@@ -18,11 +18,11 @@ ATHSC_fnc_createCam = {
 	ATHSC_CamDir = random 360;
 	ATHSC_CamHeight = 15;
 	ATHSC_Cam = "camera" camCreate (eyePos player);
-	
+
 	ATHSC_Dialog = createDialog "ATHSC_Main";
 
 	//ATHSC_Cam switchCamera "Internal";
-	
+
 	showCinemaBorder false;
 	ATHSC_Cam camSetPos (ASLToATL (eyePos player));
 	ATHSC_Cam camCommit 0;
@@ -30,15 +30,16 @@ ATHSC_fnc_createCam = {
 	ATHSC_Cam camSetPos ((getpos player) vectorAdd [-cos(ATHSC_CamDir)*8,sin(ATHSC_CamDir)*8, ATHSC_CamHeight]);
 	ATHSC_Cam cameraEffect ["internal", "back"];
 	ATHSC_Cam camCommit 2;
-	
+
 	ATHSC_Run = true;
-	
+
 	sleep 2;
 	[] spawn ATHSC_fnc_camLoop;
 };
 ATHSC_fnc_updateCam = {
 	private["_commit","_target"];
-	_commit = param [0,0];
+	//_commit = param [0,0]; // requires A3 v1.48
+	_commit = [_this, 0, 0] call BIS_fnc_param;
 	if(!(isNull ATHSC_Cam)) then {
 		_target = ATHSC_CamTarget;
 		if(vehicle _target != _target) then {
@@ -175,7 +176,7 @@ ATHSC_fnc_keyDown = {
 	_shift = _this select 2;
 	_ctrlKey = _this select 3;
 	_alt = _this select 4;
-	
+
 	_handled = false;
 
 	if(_dikCode == DIK_A) then {
@@ -223,7 +224,7 @@ ATHSC_fnc_keyDown = {
 	if(ATHSC_CamDir<0) then {
 		ATHSC_CamDir = (360 - ATHSC_CamDir%360);
 	};
-	_handled;  
+	_handled;
 };
 ATHSC_fnc_updateText = {
 	private["_enemysNear","_targetUnconscious","_targetName","_line1","_line2","_control","_text"];

@@ -1,7 +1,12 @@
 private["_process","_function","_callType","_timeout","_handle","_return"];
 private["_lastCall","_time"];
-_process = param[0];
-_index = param[1];
+//if (requiredVersion "1.48") then {
+//	_process = param[0];
+//	_index = param[1];
+//} else {
+	_process = [_this, 0] call BIS_fnc_param;
+	_index = [_this, 0] call BIS_fnc_param;
+//};
 
 _function = _process select 0;
 _callType = _process select 1;
@@ -9,7 +14,7 @@ _time = _process select 2;
 _lastCall = _process select 3;
 _timeout = _process select 4;
 _handle = _process select 5;
-	
+
 
 
 if(_calltype == "call") then {
@@ -20,8 +25,8 @@ if(_calltype == "call") then {
 		case "CODE": {
 			call _function;
 		};
-		default { 
-			diag_log "Warning: Unknown datatype as chronos function."; 
+		default {
+			diag_log "Warning: Unknown datatype as chronos function.";
 		};
 	};
 } else {
@@ -32,8 +37,8 @@ if(_calltype == "call") then {
 		case "CODE": {
 			_return = [] spawn _function;
 		};
-		default { 
-			diag_log "Warning: Unknown datatype as chronos function."; 
+		default {
+			diag_log "Warning: Unknown datatype as chronos function.";
 		};
 	};
 	(A3E_CronProcesses select _index) set [5,_return];

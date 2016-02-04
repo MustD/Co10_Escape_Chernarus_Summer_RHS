@@ -87,6 +87,7 @@ if (isServer) then {
 // reload gear
 waitUntil { !isNull player }; // Wait for player to initialize
 
+/*
 // Compile scripts
 getLoadout = compile preprocessFileLineNumbers 'get_loadout.sqf';
 setLoadout = compile preprocessFileLineNumbers 'set_loadout.sqf';
@@ -103,11 +104,11 @@ player addEventHandler ["Killed",
 // Load saved loadout (including ammo count) on respawn
 player addEventHandler ["Respawn",
 	{
-		[player,loadout,["ammo"]] spawn setLoadout;
 		waitUntil {!savingLoadout};
+		[player,loadout,["ammo"]] spawn setLoadout;
 		deleteVehicle _this select 1;
 	}
 ];
-
+*/
 
 call compile preprocessFileLineNumbers ("pdth\mr\init_repack_for_player.sqf");

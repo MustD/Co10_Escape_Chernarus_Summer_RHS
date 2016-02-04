@@ -9,20 +9,20 @@ AT_Revive_Camera = 0;
 if(isNil("AT_Revive_StaticRespawns")) then {
 	AT_Revive_enableRespawn = true;
 };
-	
-	
+
+
 AT_Revive_Debug = false;
 [] spawn
 {
     waitUntil {!isNull player};
-	
+
 	[true] spawn AT_FNC_Revive_InitPlayer;
-	
-	
-	player addEventHandler 
+
+
+	player addEventHandler
 	[
-		"Respawn", 
-		{ 
+		"Respawn",
+		{
 			[false] spawn AT_FNC_Revive_InitPlayer;
 		}
 	];
@@ -32,7 +32,7 @@ AT_Revive_Debug = false;
 if (!AT_Revive_Debug || isMultiplayer) exitWith {};
 
 {
-	if (!isPlayer _x) then 
+	if (!isPlayer _x) then
 	{
 		_x addEventHandler ["HandleDamage", AT_FNC_Revive_HandleDamage];
 		_x setVariable ["AT_Revive_isUnconscious", false, true];

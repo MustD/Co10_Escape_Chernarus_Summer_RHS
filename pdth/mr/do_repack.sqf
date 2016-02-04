@@ -20,7 +20,7 @@
 
 	RETURNS: nothing.
 
-	PARAMETER(S): array
+	PARAMETER(S): (as passed to action code) array
 	_this select 0 is considered as target unit
 	_this select 3 is considered as array of this sript's arguments, consisting of:
 		0. number: pre-sleep for all repack procedure, Z
@@ -36,7 +36,8 @@
 private ["_target", "_mags", "_nfMags", "_nrMags", "_amMags", "_clName", "_magCount", "_fullMagCount", "_amFound", "_newFull", "_newCount", "_remain", "_mag", "_oldMags", "_dispNm"];
 
 _target = _this select 0;
-if (!isNull _target) then {
+if (!isNull _target && _target == vehicle _target) then {
+	pdth_mr_repack_runs = true;
 	_mags = magazinesAmmo _target;
 	if (count _mags > 0) then {
 		// _nfMags is simply an array containing class names of non-full magazines found
@@ -146,4 +147,5 @@ if (!isNull _target) then {
 			};
 		};
 	};
+	pdth_mr_repack_runs = false;
 };

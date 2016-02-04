@@ -106,11 +106,11 @@ while {true} do {
         else {
             _minDistance = _minSpawnDistance;
         };
-        
+
         // Get a random spawn position
         _spawnPos = [units _referenceGroup, _minDistance, _maxSpawnDistance] call a3e_fnc_RandomSpawnPos;
         _skill = _minSkill + random (_maxSkill - _minSkill);
-        
+
         _faction = _factionsArray select (floor (random (count _factionsArray)));
         if(_faction == A3E_VAR_Side_Opfor) then {
             _possibleInfantryTypes = a3e_arr_Escape_InfantryTypes;
@@ -122,11 +122,13 @@ while {true} do {
         // Create group
         _unitsInGroup = _minUnitsInGroup + floor (random (_maxUnitsInGroup - _minUnitsInGroup));
         _group = createGroup _faction;
-        
+
         for [{_i = 0}, {_i < _unitsInGroup}, {_i = _i + 1}] do {
             _infantryType = _possibleInfantryTypes select floor (random count _possibleInfantryTypes);
-            //_infantryType createUnit [_spawnPos, _group,"", _skill, "PRIVATE"];
-			_group createUnit [_infantryType, _spawnPos, [], 0, "FORM"];
+	    // pedeathtrian: uncommented: this is correct
+            _infantryType createUnit [_spawnPos, _group, "", _skill, "PRIVATE"];
+			// pedeathtrian: commented: and this is not
+			//_group createUnit [_infantryType, _spawnPos, [], 0, "FORM"];
         };
 
         {
@@ -137,9 +139,9 @@ while {true} do {
             // Run custom code for units and group
             _x setVariable ["drn_scriptHandle", _x spawn _fnc_OnSpawnUnit]; // Squint complaining, but is ok.
 		} foreach units _group;
-        
+
         _group setVariable ["drn_scriptHandle", _group spawn _fnc_OnSpawnGroup]; // Squint complaining, but is ok.
-        
+
         // Name group
         sleep random 0.05;
         if (isNil "drn_AmbientInfantry_CurrentEntityNo") then {
@@ -148,17 +150,17 @@ while {true} do {
 
         _currentEntityNo = drn_AmbientInfantry_CurrentEntityNo;
         drn_AmbientInfantry_CurrentEntityNo = drn_AmbientInfantry_CurrentEntityNo + 1;
-        
+
         _vehicleVarName = "drn_AmbientInfantry_Entity_" + str _currentEntityNo;
         ((units _group) select 0) setVehicleVarName _vehicleVarName;
         ((units _group) select 0) call compile format ["%1=_this;", _vehicleVarName];
-        
+
         // Start group
         //[((units _group) select 0), A3E_Debug] spawn drn_fnc_MoveInfantryGroup;
-		
+
 		_script = [_group, nil] spawn A3E_fnc_Patrol;
 		_group setvariable["A3E_GroupPatrolScript",_script];
-		
+
         _activeGroups set [count _activeGroups, _group];
         _activeUnits = _activeUnits + units _group;
 
@@ -166,13 +168,13 @@ while {true} do {
             ["Infantry group created! Total groups = " + str count _activeGroups] call drn_fnc_CL_ShowDebugTextAllClients;
         };
 	};
-    
+
     _atScriptStartUp = false;
 
-	
+
     _farAwayUnits = [];
     _farAwayUnitsCount = 0;
-    
+
     // If any group is too far away, delete it
     {
         private ["_unit"];
@@ -183,20 +185,20 @@ while {true} do {
         {
             private ["_hasGroup", "_group", "_groupUnit", "_referenceUnit"];
             _referenceUnit = vehicle _x;
-            
+
             // A unit is far away if its alive and beyond max spawn distance, or if it's dead and beyond garbage collect distance.
             if ((((alive _unit) && (_referenceUnit distance _unit < _maxSpawnDistance)) || ((!alive _unit) && (_referenceUnit distance _unit < _garbageCollectDistance)))) exitWith {
                 _unitIsFarAway = false;
             };
         } foreach units _referenceGroup;
-        
+
         if (_unitIsFarAway) then {
             _farAwayUnits set [_farAwayUnitsCount, _unit];
             _farAwayUnitsCount = _farAwayUnitsCount + 1;
         };
 
     } foreach _activeUnits;
-    
+
     _unitsToDelete = [];
     _groupsToDelete = [];
     _unitsToDeleteCount = 0;
@@ -205,13 +207,13 @@ while {true} do {
         private ["_unit"];
         private ["_hasGroup", "_wholeGroupFarAway"];
         _unit = _x;
-        
+
         _group = group _unit;
         _hasGroup = false;
         if (str _group != "<NULL-group>") then {
             _hasGroup = true;
         };
-        
+
         if (_hasGroup) then {
             // Delete all units in the group, if all units are far away
             _wholeGroupFarAway = true;
@@ -220,11 +222,11 @@ while {true} do {
                     _wholeGroupFarAway = false;
                 };
             } foreach units group _unit;
-            
+
             if (_wholeGroupFarAway) then {
                 _unitsToDelete set [_unitsToDeleteCount, _unit];
                 _unitsToDeleteCount = _unitsToDeleteCount + 1;
-                
+
                 if (!(_group in _groupsToDelete)) then {
                     _groupsToDelete set [_groupsToDeleteCount, _group];
                     _groupsToDeleteCount = _groupsToDeleteCount + 1;
@@ -236,27 +238,27 @@ while {true} do {
             _unitsToDeleteCount = _unitsToDeleteCount + 1;
         };
     } foreach _farAwayUnits;
-    
+
     // Delete units that are marked for delete
     _activeUnits = + _activeUnits - _unitsToDelete;
     _activeGroups = + _activeGroups - _groupsToDelete;
-    
+
     {
         private ["_scriptHandle"];
-        
+
         _scriptHandle = _x getVariable ["drn_scriptHandle",nil];
 		if(!isNil("_scriptHandle")) then {
 			if (!(scriptDone _scriptHandle)) then {
 				terminate _scriptHandle;
 			};
 		};
-        
+
         deleteVehicle _x;
     } foreach _unitsToDelete;
-    
+
     {
         private ["_scriptHandle"];
-        
+
         _scriptHandle = _x getVariable ["drn_scriptHandle",nil];
         if(!isNil("_scriptHandle")) then {
 			if (!(scriptDone _scriptHandle)) then {
@@ -271,23 +273,23 @@ while {true} do {
 		};
         deleteGroup _x;
     } foreach _groupsToDelete;
-    
+
     A3E_DebugMsg = "";
     if (count _unitsToDelete > 0) then {
         A3E_DebugMsg = str (count _unitsToDelete) + " units deleted by Ambient Infantry. ";
     };
-    
+
     if (count _groupsToDelete > 0) then {
         A3E_DebugMsg = A3E_DebugMsg + str (count _groupsToDelete) + " groups deleted by Ambient Infantry. ";
     };
-    
+
     if (A3E_Debug && A3E_DebugMsg != "") then {
         [A3E_DebugMsg] call drn_fnc_CL_ShowDebugTextAllClients;
     };
 
     _tempGroupsCount = 0;
     _tempGroups = [];
-    
+
     // Remove dead groups from active groups list
     {
         private ["_activeGroup"];
@@ -302,11 +304,11 @@ while {true} do {
                 ["Ambient Infantry deleting group with all dead units."] call drn_fnc_CL_ShowDebugTextAllClients;
             };
         };
-        
+
     } foreach _activeGroups;
-    
+
     _activeGroups = _tempGroups;
-    
+
     if (A3E_Debug) then {
         sleep 1;
     }

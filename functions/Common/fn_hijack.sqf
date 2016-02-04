@@ -40,7 +40,7 @@ cutText ["", "Plain", 1];
 //### The Range for extraction is hardcoded at the moment... should be changed to a param
 //### mode 0: totally random
 //### mode 1: try to pick a close extraction point
-//### mode 2: try to pick a extraction far away 
+//### mode 2: try to pick a extraction far away
 _mode = Param_ExtractionSelection;
 
 
@@ -48,7 +48,7 @@ if (_count == 0) then {
 
 	_flag = false;
 	//If selection fails ten times, a random point is selected-
-	
+
 	if(_mode == 0) then {
 		_extractionPointNo = floor(random 8) + 1;
 		a3e_var_Escape_ExtractionMarkerPos =  getMarkerPos ("drn_Escape_ExtractionPos" + str _extractionPointNo);
@@ -58,7 +58,7 @@ if (_count == 0) then {
 		for[{_i = 1},{_i<=8},{_i = _i +1}] do {
 
 			_pos = getMarkerPos ("drn_Escape_ExtractionPos" + str _i);
-			
+
 			if((getpos _generatorTrailer distance _pos)<(getpos _generatorTrailer distance _selectedPos) AND (_mode == 1)) then {
 				_selectedPos = _pos;
 				_extractionPointNo = _i;
@@ -70,20 +70,24 @@ if (_count == 0) then {
 		};
 		a3e_var_Escape_ExtractionMarkerPos = getMarkerPos ("drn_Escape_ExtractionPos" + str _extractionPointNo);
 	};
-    publicVariable "a3e_var_Escape_ExtractionMarkerPos";
-    _generatorTrailer setvariable ["A3E_Terminal_Hacked",true,true];
-    if (!isNil "a3e_var_Escape_ExtractionMarker") then {
-        deleteMarker a3e_var_Escape_ExtractionMarker;
-    };
-    a3e_var_Escape_ExtractionMarker = createMarker ["drn_visibleGoalMarker", a3e_var_Escape_ExtractionMarkerPos];
-    a3e_var_Escape_ExtractionMarker setMarkerType "Flag_NATO";
-	
-    [_extractionPointNo] remoteExec ["A3E_fnc_CreateExtractionPoint",2,false];
-    
+	publicVariable "a3e_var_Escape_ExtractionMarkerPos";
+	_generatorTrailer setvariable ["A3E_Terminal_Hacked",true,true];
+	if (!isNil "a3e_var_Escape_ExtractionMarker") then {
+		deleteMarker a3e_var_Escape_ExtractionMarker;
+	};
+	a3e_var_Escape_ExtractionMarker = createMarker ["drn_visibleGoalMarker", a3e_var_Escape_ExtractionMarkerPos];
+	a3e_var_Escape_ExtractionMarker setMarkerType "Flag_NATO";
+
+//	if (requiredVersion "1.50") then {
+//		[_extractionPointNo] remoteExec ["A3E_fnc_CreateExtractionPoint",2,false];
+//	} else {
+		[[_extractionPointNo], "A3E_fnc_CreateExtractionPoint", false] call BIS_fnc_MP;
+//	}
+
 	A3E_Task_ComCenter_Complete = true;
 	publicvariable "A3E_Task_ComCenter_Complete";
-	
+
     ["Task complete: Hack Communication Center (Rendezvous point marked on map)"] call drn_fnc_CL_ShowTitleTextAllClients;
-    
+
    // _generatorTrailer removeAction _id;
 };
