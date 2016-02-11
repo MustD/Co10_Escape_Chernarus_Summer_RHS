@@ -1,7 +1,7 @@
 /*
 	AUTHOR: pedeathtrian
 	NAME: pdth/mr/has_repack.sqf
-	VERSION: 0.0.1
+	VERSION: 0.0.2
 
 	DESCRIPTION:
 	This file is a part of pedeathtrian's magazine-repack "pdth/mr" bunch of scripts.
@@ -29,29 +29,37 @@
 	but this script uses `_this' as target unit, so if you want to apply script to object other than caller, tehn actual `condition' most likely would be "_target call pdth_mr_has_repack"
 	See also: https://community.bistudio.com/wiki/addAction
 */
-
-private ["_result", "_mags", "_nfMags", "_clName", "_magCount", "_fullMagCount"];
-
+private ["_result", "_runs"];
 _result = false;
-if (!isNull _this && !pdth_mr_repack_runs && _this == vehicle _this) then {
-	_mags = magazinesAmmo _this;
-	if (count _mags > 0) then {
-		// _nfMags is simply an array containing class names of non-full magazines found
-		_nfMags = [];
-		scopeName "_magsSN";
-		{
-			_clName = _x select 0;
-			_magCount = _x select 1;
-			_fullMagCount = getNumber(configFile >> "CfgMagazines" >> _clName >> "count");
-			if (_magCount < _fullMagCount) then {
-				if (_clName in _nfMags) then {
-					// if we found second non-empty mag of this class, that means we can repack
-					_result = true;
-					breakTo "_magsSN";
+if (!(isNull _this)) then {
+	_runs = _this getVariable ["pdth_mr_repack_runs", false];
+	if (!_runs) then {
+		private ["_isMan", "_mags", "_nfMags", "_clName", "_magCount", "_fullMagCount"];
+		//_isMan = (typeOf _this) isKindOf ["Man", (configFile >> "CfgVehicles")]; // requires v1.47
+		_isMan = (typeOf _this) isKindOf "Man"; // we anyway scan in "CfgVehicles"
+		_mags = if (_isMan) then {
+			magazinesAmmo _this;
+		} else {
+			magazinesAmmoCargo _this;
+		};
+		if (count _mags > 0) then {
+			// _nfMags is simply an array containing class names of non-full magazines found
+			_nfMags = [];
+			scopeName "_magsSN";
+			{
+				_clName = _x select 0;
+				_magCount = _x select 1;
+				_fullMagCount = getNumber(configFile >> "CfgMagazines" >> _clName >> "count");
+				if (_magCount < _fullMagCount) then {
+					if (_clName in _nfMags) then {
+						// if we found second non-empty mag of this class, that means we can repack
+						_result = true;
+						breakTo "_magsSN";
+					};
+					_nfMags pushBack _clName;
 				};
-				_nfMags pushBack _clName;
-			};
-		} forEach _mags;
+			} forEach _mags;
+		};
 	};
 };
 _result
