@@ -1,6 +1,7 @@
 AT_FNC_Revive_InitPlayer = {
-	private["_init","_anotherPlayer"];
+	private["_init","_anotherPlayer", "_corpse"];
 	_init = _this select 0;
+	_corpse = _this select 1;
 	player removeAllEventHandlers "HandleDamage";
 	player removeAllEventHandlers "Killed";
 
@@ -16,9 +17,9 @@ AT_FNC_Revive_InitPlayer = {
 			_body = _this select 0;
 			[_body] spawn
 			{
-
 				waitUntil { alive player };
 				_body = _this select 0;
+				waitUntil { alive player && (!(_body in AT_Revive_HoldFromDelete)) };
 				deleteVehicle _body;
 			}
 		}
@@ -34,7 +35,19 @@ AT_FNC_Revive_InitPlayer = {
 	//systemchat "AT Revive started";
 	if(!_init) then {
 		//Player used respawn.. remove all his stuff and thread him like JIP
-		if(!AT_Revive_WeaponsOnRespawn) then {
+		if(AT_Revive_WeaponsOnRespawn) then {
+			if (!isNil "_corpse") then {
+				if (!isNull _corpse) then {
+					if (!(_corpse in AT_Revive_HoldFromDelete)) then {
+						AT_Revive_HoldFromDelete pushBack _corpse;
+					};
+					if (!(player in AT_Revive_HoldFromDelete)) then {
+						AT_Revive_HoldFromDelete pushBack player;
+					};
+					[player, _corpse, true, false] spawn at_fnc_copyGear;
+				};
+			};
+		} else {
 			removeallweapons player;
 			removeAllItems player;
 			removeBackpack player;
@@ -47,7 +60,6 @@ AT_FNC_Revive_InitPlayer = {
 			player removeItem "itemGPS";
 			player unassignItem "NVGoggles";
 			player removeItem "NVGoggles";
-
 		};
 
 		if(count(AT_Revive_StaticRespawns)>0) then {
@@ -70,11 +82,11 @@ AT_FNC_Revive_InitPlayer = {
 AT_FNC_Revive_Actions = {
 	if (alive player) then
 	{
-		player addAction ["<t size=""1.25"" color=""#C90000"">" + "Revive (with FAK)" + "</t>", "Revive\reviveAction.sqf", ["revivefak"], 19, true, true, "", "call AT_FNC_Revive_Check_Revive_FAK"];
-		player addAction ["<t size=""1.25"" color=""#C90000"">" + "Revive" + "</t>", "Revive\reviveAction.sqf", ["revive"], 18, true, true, "", "call AT_FNC_Revive_Check_Revive"];
-		player addAction ["<t size=""1.25"" color=""#FFA500"">" + "Drag" + "</t>", "Revive\reviveAction.sqf", ["drag"], 17, false, true, "", "call AT_FNC_Revive_Check_Dragging"];
-		player addAction ["<t size=""1.25"" color=""#FFA500"">" + "Put in injured" + "</t>", "Revive\reviveAction.sqf", ["putin"], 17, false, true, "", "call AT_FNC_Revive_Check_Putin"];
-		player addAction ["<t size=""1.25"" color=""#FFA500"">" + "Pull out injured" + "</t>", "Revive\reviveAction.sqf", ["pullout"], 17, false, true, "", "call AT_FNC_Revive_Check_Pullout"];
+		player addAction ["<t size=""1.1"" color=""#C90000"">" + "Revive (with FAK)" + "</t>", "Revive\reviveAction.sqf", ["revivefak"], 19, true, true, "", "call AT_FNC_Revive_Check_Revive_FAK"];
+		player addAction ["<t size=""1.1"" color=""#C90000"">" + "Revive" + "</t>", "Revive\reviveAction.sqf", ["revive"], 18, true, true, "", "call AT_FNC_Revive_Check_Revive"];
+		player addAction ["<t size=""1.1"" color=""#FFA500"">" + "Drag" + "</t>", "Revive\reviveAction.sqf", ["drag"], 17, false, true, "", "call AT_FNC_Revive_Check_Dragging"];
+		player addAction ["<t size=""1.1"" color=""#FFA500"">" + "Put in injured" + "</t>", "Revive\reviveAction.sqf", ["putin"], 17, false, true, "", "call AT_FNC_Revive_Check_Putin"];
+		player addAction ["<t size=""1.1"" color=""#FFA500"">" + "Pull out injured" + "</t>", "Revive\reviveAction.sqf", ["pullout"], 17, false, true, "", "call AT_FNC_Revive_Check_Pullout"];
 	};
 
 };
@@ -528,7 +540,11 @@ AT_FNC_Revive_Ragdoll = {
 			_dummy setdir getdir _unit;
 			_dummy setVelocity velocity _unit;
 			_state = animationState _unit;
-			[_dummy,_unit] spawn at_fnc_copyGear;
+			if (!(_unit in AT_Revive_HoldFromDelete)) then {
+				AT_Revive_HoldFromDelete pushBack _unit;
+			};
+			AT_Revive_HoldFromDelete pushBack _dummy;
+			[_dummy,_unit, true, true, false] spawn at_fnc_copyGear;
 			[[_dummy,_state],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
 			_dummy setdammage 1;
 			if(_unit==player) then {
@@ -546,6 +562,7 @@ AT_FNC_Revive_Ragdoll = {
 			[[_unit,"AinjPpneMstpSnonWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
 			player switchCamera "Internal";
 			_dummy setpos [0,0,0];
+			waitUntil {(!(_dummy in AT_Revive_HoldFromDelete))};
 			deletevehicle _dummy;
 		} else {
 			[[_unit,"AinjPpneMstpSnonWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
@@ -555,12 +572,177 @@ AT_FNC_Revive_Ragdoll = {
 	};
 };
 
+PDTH_FNC_CopyTypedCargo = {
+	/*
+		Added by pedeathtrian
+
+		Usage: [dest,src(,types,keepAmmo,clear,global,spawn)] call PDTH_FNC_CopyTypedCargo
+		Array of arguments:
+			dest:	destination unit/cargospace (can be for example, vestContainer player)
+			src:	source unit/cargospace
+				Optional params:
+			types:	bitwise mask of these flags:, default is 7 (1+2+4)
+				0:	do nothing
+				1:	copy items
+				2:	copy magazines
+				4:	copy weapons
+			keepAmmo:	keep ammo count in magazines, ony used if 4 is in types, default is false
+			clear:	clear dest container cargo of specified type before copy (e.g. call clearMagazineCargo for magazines), default is false
+			global:	use global variants of functions where possible, default is false
+			spawn:	use `spawn' call instead of `call' for typed subcalls; default is false; if `clear' is set to true, this parameter is false.
+				The rationale for this is as follows. This method parses `types' parameter and calls/spawns itself for each separate type
+				(if more than one, otherwise neither call nor spawn is used).
+				Imagine situation. In source container you have some weapon with attachments and magazine.
+				You call this method with clear=true and types=7 (items, magazines, weapons) and this methods spawns
+				itself for each type. But now, every spawn is scheduled, so it can happen that weapon-typed spawn is finished before ammo-typed
+				and item-typed. Since there's no way in ArmA to put weapon to container with attachments and magazine, it is being put separately.
+				Then ammo- and item-typed spawns are executed with clear=true. They will delete your weapon's items and ammo wich put separately in container.
+				This is also the reason why weapon-typed call is performed after (4>2>1) others when clear=true and spawn=false.
+	*/
+	private ["_contDest", "_contSrc", "_types", "_clear", "_global", "_spawn", "_keepAmmoCount", "_arr", "_subArr", "_i"];
+	_contDest = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
+	_contSrc = [_this, 1, objNull, [objNull]] call BIS_fnc_param;
+	_types = [_this, 2, 7, [0]] call BIS_fnc_param;
+	_keepAmmoCount = [_this, 3, false, [true]] call BIS_fnc_param;
+	_clear = [_this, 4, false, [true]] call BIS_fnc_param;
+	_global = [_this, 5, false, [true]] call BIS_fnc_param;
+	_spawn = [_this, 6, false, [true]] call BIS_fnc_param;
+	if (_clear) then {
+		_spawn = false;
+	};
+
+	scopeName "func_PDTH_FNC_CopyTypedCargo";
+	if (isNull _contDest || isNull _contSrc || _contDest == _contSrc || _types == 0) then {
+		breakOut "func_PDTH_FNC_CopyTypedCargo";
+	};
+
+	if (_types == 1) then {
+		if (_clear) then {
+			if (_global) then {
+				clearItemCargoGlobal _contDest;
+			} else {
+				clearItemCargo _contDest;
+			};
+		};
+		_arr = getItemCargo _contSrc;
+		if(count _arr > 0) then {
+			if (_global) then {
+				{
+					_contDest addItemCargoGlobal [_x, ((_arr) select 1) select _forEachIndex];
+				} foreach ((_arr) select 0);
+			} else {
+				{
+					_contDest addItemCargo [_x, ((_arr) select 1) select _forEachIndex];
+				} foreach ((_arr) select 0);
+			};
+		};
+	} else {
+		if (_types == 2) then {
+			if (_clear) then {
+				if (_global) then {
+					clearMagazineCargoGlobal _contDest;
+				} else {
+					clearMagazineCargo _contDest;
+				};
+			};
+			if (_keepAmmoCount) then {
+				_arr = magazinesAmmoCargo _contSrc;
+				if(count(_arr)>0) then {
+					{
+						// seems there's no Global variant of this function
+						_contDest addMagazineAmmoCargo [_x select 0, 1, _x select 1];
+					} forEach _arr;
+				};
+			} else {
+				_arr = getMagazineCargo _contSrc;
+				if(count(_arr)>0) then {
+					if (_global) then {
+						{
+							_contDest addMagazineCargoGlobal [_x, ((_arr) select 1) select _forEachIndex];
+						} foreach ((_arr) select 0);
+					} else {
+						{
+							_contDest addMagazineCargo [_x, ((_arr) select 1) select _forEachIndex];
+						} foreach ((_arr) select 0);
+					};
+				};
+			};
+		} else {
+			if (_types == 4) then {
+				if (_clear) then {
+					if (_global) then {
+						clearWeaponCargoGlobal _contDest;
+					} else {
+						clearWeaponCargo _contDest;
+					};
+				};
+				_arr = weaponsItemsCargo _contSrc;
+				if(count _arr > 0) then {
+					{
+						_subArr = _x;
+						if (count _subArr > 0) then {
+							if (_global) then {
+								{
+									if (typeName _x == "STRING") then {
+										_contDest addItemCargoGlobal [_x, 1];
+									} else {
+										if (typeName _x == "ARRAY") then {
+											// this function does not have Global variant yet
+											_contDest addMagazineAmmoCargo _x;
+										};
+									};
+								} forEach  _subArr;
+							} else {
+								{
+									if (typeName _x == "STRING") then {
+										_contDest addItemCargo [_x, 1];
+									} else {
+										if (typeName _x == "ARRAY") then {
+											_contDest addMagazineAmmoCargo _x;
+										};
+									};
+								} forEach  _subArr;
+							};
+						};
+					} forEach _arr;
+				};
+			} else {
+				if ((_types % 2) == 1) then {
+					if (_spawn) then {
+						[_contDest, _contSrc, 1, _keepAmmoCount, _clear, _global] spawn PDTH_FNC_CopyTypedCargo;
+					} else {
+						[_contDest, _contSrc, 1, _keepAmmoCount, _clear, _global] call PDTH_FNC_CopyTypedCargo;
+					};
+				};
+				_types = floor(_types / 2);
+				if ((_types % 2) == 1) then {
+					if (_spawn) then {
+						[_contDest, _contSrc, 2, _keepAmmoCount, _clear, _global] spawn PDTH_FNC_CopyTypedCargo;
+					} else {
+						[_contDest, _contSrc, 2, _keepAmmoCount, _clear, _global] call PDTH_FNC_CopyTypedCargo;
+					};
+				};
+				_types = floor(_types / 2);
+				if ((_types % 2) == 1) then {
+					if (_spawn) then {
+						[_contDest, _contSrc, 4, _keepAmmoCount, _clear, _global] spawn PDTH_FNC_CopyTypedCargo;
+					} else {
+						[_contDest, _contSrc, 4, _keepAmmoCount, _clear, _global] call PDTH_FNC_CopyTypedCargo;
+					};
+				};
+			};
+		};
+	};
+};
+
 AT_FNC_CopyGear = {
-	private["_u1","_u2","_weapons","_assigned_items","_primary","_array","_blacklist","_magazinesAmmoFull","_keep_ammocount"];
+	private["_u1","_u2", "_d1", "_d2","_weapons","_assigned_items","_primary","_wName","_i","_blacklist","_keep_ammocount"];
 
 	_u1 = [_this,0,objnull,[objnull]] call bis_fnc_param;
 	_u2 = [_this,1,objnull,[objnull]] call bis_fnc_param;
 	_keep_ammocount = [_this,2,false,[true]] call bis_fnc_param;
+	_d1 = [_this,3,true,[true]] call bis_fnc_param;
+	_d2 = [_this,4,true,[true]] call bis_fnc_param;
 
 	if (isnull _u1) exitwith {
 		["Missing first parameter for gear copy!"] call BIS_fnc_error;
@@ -568,15 +750,14 @@ AT_FNC_CopyGear = {
 	if (isnull _u2) exitwith {
 		["Missing second parameter for gear copy!"] call BIS_fnc_error;
 	};
-	//[[format["Copy gear for %1",name _u1]],"at_fnc_debug",true] call BIS_fnc_MP;
 	_primary = primaryWeapon _u2;
 	_weapons = weaponsItems _u2;
 
 	removeAllAssignedItems _u1;
 	removeAllContainers _u1;
 	removeAllWeapons _u1;
-
 	removeHeadgear _u1;
+
 	if((headgear _u2)!="") then {
 		_u1 addHeadgear (headgear _u2);
 	};
@@ -584,137 +765,50 @@ AT_FNC_CopyGear = {
 	if((goggles _u2)!="") then {
 		_u1 addGoggles (goggles _u2);
 	};
-	//if(true) exitwith {};
 	if((uniform _u2)!="") then {
 		_u1 adduniform(uniform _u2);
 	};
 	if((vest _u2)!="") then {
 		_u1 addvest (vest _u2);
 	};
-	//if((backpack _u2)!="") then {
-	//	_u1 addbackpack (backpack _u2);
-	//};
-
-	//This keeps the correct amount of ammo in every magazine but the correct distribution will be lost
-	if(_keep_ammocount) then {
-		{
-			_u1 addmagazine [(_x select 0),(_x select 1)];
-		} foreach magazinesAmmoFull _u2;
+	if((backpack _u2)!="") then {
+		_u1 addbackpack (backpack _u2);
+		clearAllItemsFromBackpack _u1; // some backpacks spawned with some items already contained
 	};
 
-
-	_blacklist = ["Rangefinder","Binocular"];
-	{
-
-		if((_x select 0)!="" && !((_x select 0) in _blacklist)) then {
-
-			//This will add the current loaded magazine in the weapon
-			//Nobody needs ammo
-			/*if(!_keep_ammocount) then {
-				if(count(_x)>4) then {
-					_u1 addmagazine [(_x select 4) select 0,(_x select 4) select 1];
-				};
-				if(count(_x)>5) then {
-					_u1 addmagazine [(_x select 5) select 0,(_x select 5) select 1];
-				};
-			};*/
-			_u1 addweapon (_x select 0);
-			_u1 linkitem (_x select 1);
-			_u1 linkitem (_x select 2);
-			_u1 linkitem (_x select 3);
-		};
-	} foreach (weaponsItems _u2);
-
-	_array = getItemCargo uniformContainer _u2;
-	if(count(_array)>0) then {
-		{
-			for[{_i=0},{_i<((_array) select 1) select _forEachIndex},{_i=_i+1}] do {
-				_u1 addItemToUniform _x;
-			};
-		} foreach ((_array) select 0);
-	};
-	//This will restore the the correct magazine amount in each container
-	if(!_keep_ammocount) then {
-		_array = getMagazineCargo uniformContainer _u2;
-		if(count(_array)>0) then {
-			{
-				for[{_i=0},{_i<((_array) select 1) select _forEachIndex},{_i=_i+1}] do {
-					_u1 addItemToUniform _x;
-				};
-			} foreach ((_array) select 0);
-		};
-	};
-	_array = getWeaponCargo uniformContainer _u2;
-	if(count(_array)>0) then {
-		{
-			for[{_i=0},{_i<((_array) select 1) select _forEachIndex},{_i=_i+1}] do {
-				_u1 addItemToUniform _x;
-			};
-		} foreach ((_array) select 0);
-	};
-
-	_array = getItemCargo vestContainer _u2;
-	if(count(_array)>0) then {
-		{
-			for[{_i=0},{_i<((_array) select 1) select _forEachIndex},{_i=_i+1}] do {
-				_u1 addItemToVest _x;
-			};
-		} foreach ((_array) select 0);
-	};
-	if(!_keep_ammocount) then {
-		_array = getMagazineCargo vestContainer _u2;
-		if(count(_array)>0) then {
-			{
-				for[{_i=0},{_i<((_array) select 1) select _forEachIndex},{_i=_i+1}] do {
-					_u1 addItemToVest _x;
-				};
-			} foreach ((_array) select 0);
-		};
-	};
-	_array = getWeaponCargo vestContainer _u2;
-	if(count(_array)>0) then {
-		{
-			for[{_i=0},{_i<((_array) select 1) select _forEachIndex},{_i=_i+1}] do {
-				_u1 addItemToBackpack _x;
-			};
-		} foreach ((_array) select 0);
-	};
-
-	if(false) then {
-		_array = getItemCargo backpackContainer _u2;
-		if(count(_array)>0) then {
-			{
-				for[{_i=0},{_i<((_array) select 1) select _forEachIndex},{_i=_i+1}] do {
-					_u1 addItemToBackpack _x;
-				};
-			} foreach ((_array) select 0);
-		};
-		if(!_keep_ammocount) then {
-			_array = getMagazineCargo backpackContainer _u2;
-			if(count(_array)>0) then {
-				{
-					for[{_i=0},{_i<((_array) select 1) select _forEachIndex},{_i=_i+1}] do {
-						_u1 addItemToBackpack _x;
-					};
-				} foreach ((_array) select 0);
-			};
-		};
-		_array = getWeaponCargo backpackContainer _u2;
-		if(count(_array)>0) then {
-			{
-				for[{_i=0},{_i<((_array) select 1) select _forEachIndex},{_i=_i+1}] do {
-					_u1 addItemToBackpack _x;
-				};
-			} foreach ((_array) select 0);
-		};
-	};
 	{
 		_u1 linkItem _x;
 	} foreach assignedItems _u2;
 
+	_blacklist = ["Rangefinder","Binocular"];
+	{
+		if ((count _x > 0) && (_x select 0)!="" && !((_x select 0) in _blacklist)) then {
+			_wName = _x select 0;
+			_u1 addweapon _wName;
+			for [{_i=1}, {_i < count _x}, {_i=_i+1}] do
+			{
+				// since ArmA 3 v1.38
+				// works even if (_x select _i) is array, e.g. ["30Rnd_65x39_caseless_mag", 29];
+				// muzzle is autodetected for sub-barrel grenade launchers
+				_u1 addWeaponItem [_wName, _x select _i];
+			};
+		};
+	} foreach (weaponsItems _u2);
+
+	[uniformContainer _u1, uniformContainer _u2, 7, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
+	[vestContainer _u1, vestContainer _u2, 7, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
+	[backpackContainer _u1, backpackContainer _u2, 7, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
+
 	_u1 selectWeapon (currentWeapon _u2);
 	//_zeroing = currentZeroing _u2;
 	//weaponState player;
+
+	if (_d1) then {
+		AT_Revive_HoldFromDelete = AT_Revive_HoldFromDelete - [_u1];
+	};
+	if (_d2) then {
+		AT_Revive_HoldFromDelete = AT_Revive_HoldFromDelete - [_u2];
+	};
 };
 
 //AT_FNC_Revive_WashAshore = {

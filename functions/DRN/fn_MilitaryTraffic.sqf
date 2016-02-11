@@ -151,6 +151,7 @@ _fnc_FindSpawnSegment = {
 
             // Check if road segment is at spawn distance
             _tooFarAwayFromAll = true;
+            _tooCloseToAnotherVehicle = false;
             _tooClose = false;
             {
                 private ["_tooFarAway"];
@@ -167,7 +168,6 @@ _fnc_FindSpawnSegment = {
                     _tooFarAwayFromAll = false;
                 };
 
-                _tooCloseToAnotherVehicle = false;
                 {
                     private ["_vehicle"];
                     _vehicle = _x select 0;

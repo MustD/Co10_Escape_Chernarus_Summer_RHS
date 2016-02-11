@@ -6,6 +6,12 @@ AT_Revive_enableRespawn = false;
 AT_Revive_clearedDistance = 0;
 AT_Revive_Camera = 0;
 
+// hold objects in this array from deleting by deleteVehicle: can be useful for spawned copyGear
+AT_Revive_HoldFromDelete = [];
+// if set to false, then when player selects respawn, he will be spawned without weapons and items
+// if set to true or undefined, player respawned with latest gear
+//AT_Revive_WeaponsOnRespawn = false;
+
 if(isNil("AT_Revive_StaticRespawns")) then {
 	AT_Revive_enableRespawn = true;
 };
@@ -16,14 +22,14 @@ AT_Revive_Debug = false;
 {
     waitUntil {!isNull player};
 
-	[true] spawn AT_FNC_Revive_InitPlayer;
+	[true, objNull] spawn AT_FNC_Revive_InitPlayer;
 
 
 	player addEventHandler
 	[
 		"Respawn",
 		{
-			[false] spawn AT_FNC_Revive_InitPlayer;
+			[false, _this select 1] spawn AT_FNC_Revive_InitPlayer;
 		}
 	];
 };

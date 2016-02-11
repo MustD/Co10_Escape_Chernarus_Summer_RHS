@@ -94,7 +94,7 @@ _pos = [(_centerPos select 0) + 4, (_centerPos select 1) + 6, 0];
 //_object = "Land_City_Gate_F" createVehicle _pos;
 _object = createVehicle ["Land_City_Gate_F", _pos, [], 0, "NONE"];
 _object setPos ([_centerPos, _pos, _rotateDir] call a3e_fnc_RotatePosition);
-_object setDir (_dir + 180);
+_object setDir (_dir);
 //_object addEventHandler ["AnimStateChanged", {hint "blah";drn_escapeHasStarted = true;publicVariable "drn_escapeHasStarted";}];
 _dir = 90 + _rotateDir;
 

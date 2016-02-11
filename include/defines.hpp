@@ -1,6 +1,6 @@
 #define VERSION "1.7.4"
-#define MISSIONNAME "Escape Chernarus_Summer RHS"
-#define MISSIONNAMEFULL "co10 Escape Chernarus_Summer RHS 1.7.4"
+#define MISSIONNAME "Escape Chernarus_Summer RHS Legacy"
+#define MISSIONNAMEFULL "co10 Escape Chernarus_Summer RHS Legacy 1.7.4"
 
 //--- [Controls Style Preprocessors]
 #define ST_LEFT 				0
@@ -117,14 +117,14 @@ class RscPictureKeepAspect: RscPicture {
 
 //--- HTML Structured Text
 class RscStructuredText {
-	idc = -1; 
+	idc = -1;
 	  type = CT_STRUCTURED_TEXT;  // defined constant
 	  style = ST_LEFT;            // defined constant
-	  colorBackground[] = { 1, 1, 1, 1 }; 
-	  x = 0.1; 
-	  y = 0.1; 
-	  w = 0.3; 
-	  h = 0.1; 
+	  colorBackground[] = { 1, 1, 1, 1 };
+	  x = 0.1;
+	  y = 0.1;
+	  w = 0.3;
+	  h = 0.1;
 	  size = 0.02;
 	  text = "";
 	  class Attributes {
@@ -341,7 +341,7 @@ class RscListBox {
 	autoScrollDelay = 5;
 	autoScrollRewind = 0;
 	soundSelect[] = {"\ca\ui\data\sound\new1", 0.09, 1};
-	
+
         class ScrollBar;
 	class ListScrollBar: ScrollBar {
 		color[] = {0, 0, 0, 0.6};
@@ -832,17 +832,17 @@ class ATHSC_Main
 	movingenable = false;
 	onLoad = "uiNamespace setVariable ['ATHSC_Main_Dialog', (_this select 0)];";
 	onUnload = "";
-	
+
 	class controlsBackground {
 		class Rsc_MouseArea : RscText {
 			idc = 170001;
 			style = ST_MULTI;
-			
+
 			x = "safezoneX";
 			y = "safezoneY";
 			w = "safezoneW";
 			h = "safezoneH";
-			
+
 			text = "";
 			onMouseMoving = "";
 			onMouseEnter = "";
@@ -851,7 +851,7 @@ class ATHSC_Main
 			onKeyDown = "_this call ATHSC_fnc_KeyDown;";
 		};
 	};
-	
+
 	class controls {
 		class Rsc_TargetText : RscStructuredText { //--- Render out.
 			idc = 170002;

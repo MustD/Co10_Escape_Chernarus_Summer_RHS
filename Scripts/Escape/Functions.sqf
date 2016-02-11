@@ -1,6 +1,7 @@
 A3E_fnc_GetPlayers = {
 	private["_players"];
-	_players = allPlayers;
+	//_players = allPlayers; // requires 1.48
+	_players = [] call BIS_fnc_listPlayers;
 	_players;
 };
 
@@ -53,12 +54,14 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 			_this addPrimaryWeaponItem _scope;
 		};
 	};
-	{
-		_pWeap = primaryWeapon _this;
-		if (_pWeap in a3e_arr_PSO_Rifles) then {
-			_this addPrimaryWeaponItem "rhs_acc_pso1m2";
-			_this setVehicleAmmo (0.7 + random 0.2);
-		} else if (_pWeap in a3e_arr_NPZ_Rifles) then {
+	_pWeap = primaryWeapon _this;
+	if (_pWeap in a3e_arr_PSO_Rifles) then {
+		systemChat format ["PSO, pos %1", str position _this];
+		_this addPrimaryWeaponItem "rhs_acc_pso1m2";
+		_this setVehicleAmmo (0.7 + random 0.2);
+	} else {
+		if (_pWeap in a3e_arr_NPZ_Rifles) then {
+			systemChat format ["LEUPOLD, pos %1", str position _this];
 			_this addPrimaryWeaponItem "rhsusf_acc_LEUPOLDMK4";
 			_this setVehicleAmmo (0.7 + random 0.2);
 		};

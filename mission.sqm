@@ -29,7 +29,7 @@ class Mission
 	randomSeed=16426086;
 	class Intel
 	{
-		briefingName="Escape Chernarus_Summer RHS 1.7.4";
+		briefingName="Escape Chernarus_Summer RHS Legacy 1.7.4";
 		resistanceWest=0;
 		resistanceEast=1;
 		startWeather=0;

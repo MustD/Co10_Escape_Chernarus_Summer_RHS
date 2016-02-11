@@ -4,7 +4,7 @@ ATHSC_fnc_createCam = {
 	if(isNil("AT_Revive_StaticRespawns")) then {
 		AT_Revive_StaticRespawns = [];
 	};
-	if(isNil("AT_Revive_StaticRespawns")) then {
+	if(isNil("AT_Revive_enableRespawn")) then {
 		AT_Revive_enableRespawn = true;
 	};
 	if(isNil("AT_Revive_clearedDistance")) then {

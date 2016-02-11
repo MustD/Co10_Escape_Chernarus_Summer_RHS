@@ -590,7 +590,12 @@ waitUntil {scriptDone _scriptHandle};
 
             //_unit setSkill a3e_var_Escape_enemyMinSkill;
 			//[_unit, a3e_var_Escape_enemyMinSkill] call EGG_EVO_skill;
-            _unit removeMagazines "Handgrenade";
+
+	    // "Note: You may create invalid combinations with this function. When doing so, application behaviour is undefined." // https://community.bistudio.com/wiki/removeMagazines
+            //_unit removeMagazines "Handgrenade";
+	    while {("Handgrenade" in (magazines _unit))} do {
+		    _unit removeMagazineGlobal "Handgrenade";
+	    };
 
             _unit setVehicleAmmo 0.3 + random 0.7;
 
