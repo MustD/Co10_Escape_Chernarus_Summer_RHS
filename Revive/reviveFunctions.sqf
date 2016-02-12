@@ -69,10 +69,10 @@ AT_FNC_Revive_InitPlayer = {
 			[] spawn ATHSC_fnc_createCam;
 		};
 		//_anotherPlayer = (call drn_fnc_Escape_GetPlayers) select 0;
-        //if (player == _anotherPlayer) then {
-        //    _anotherPlayer = (call drn_fnc_Escape_GetPlayers) select 1;
-        //};
-        //_pos = [((getPos vehicle _anotherPlayer) select 0) + 3, ((getPos vehicle _anotherPlayer) select 1) + 3, 0];
+		//if (player == _anotherPlayer) then {
+		//	_anotherPlayer = (call drn_fnc_Escape_GetPlayers) select 1;
+		//};
+		//_pos = [((getPos vehicle _anotherPlayer) select 0) + 3, ((getPos vehicle _anotherPlayer) select 1) + 3, 0];
 		//player setpos _pos;
 
 

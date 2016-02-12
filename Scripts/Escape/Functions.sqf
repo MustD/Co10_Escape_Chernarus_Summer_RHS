@@ -2,12 +2,110 @@ A3E_fnc_GetPlayers = {
 	private["_players"];
 	//_players = allPlayers; // requires 1.48
 	_players = [] call BIS_fnc_listPlayers;
-	_players;
+	_players
+};
+
+pdth_fnc_weapon_slot_comp_items = {
+	/**
+		Return list of compatible attachments suitable for specified weapon and for specifiied slot
+		In case of error (e.g. specified class names are invalid) returns nil (to distinguish from valid empty array return).
+		_this: Array: [ className, slotName ]:
+			className: String: weapon class name
+			slotName: String: slot class name, representing class entry in ()
+				Commonly used slot names are:
+					"CowsSlot": optics
+					"PointerSlot": pointers, flashlights, etc.
+					"MuzzleSlot": muzzle flash suppressors, silencers, etc.
+					"UnderBarrelSlot": bipods
+		@return Array: [(item1, item2, ...)]
+			item1, item2, ...: Strings
+		@example
+			// returns ["acc_flashlight", "acc_pointer_IR"]
+			_arrPointers = ["arifle_MX_F", "PointerSlot"] call pdth_fnc_weapon_slot_comp_items;
+	**/
+	private ["_clName", "_slName", "_ret"];
+	_clName = [_this, 0, "", [""]] call BIS_fnc_param;
+	_slName = [_this, 1, "", [""]] call BIS_fnc_param;
+	if ((isClass (configFile >> "CfgWeapons" >> _clName)) && (isClass (configFile >> "CfgWeapons" >> _clName >> "WeaponSlotsInfo" >> _slName))) then {
+		_ret = getArray(configFile >> "CfgWeapons" >> _clName >> "WeaponSlotsInfo" >> _slName >> "compatibleItems");
+	};
+	_ret
+};
+
+pdth_fnc_weapon_scopes = {
+	/*
+		Return list of scopes suitable for specified weapon, sorted by their vision modes.
+		_this: Array: [ className (, fullLists) ]:
+			className: String: weapon class name
+			fullLists: Boolean: (optionalm default is false):
+				If set to true, will return full list for every vision mode, i.e. Nightstalker will go
+				for all categories: none, "Normal", "NVG" and "Ti". So there might be duplications
+				of same scope in different categories.
+				Otherwise (default behaviour), only scopes with "Ti" (thermal) mode will go to "Ti" category;
+				only scopes with "NVG" mode but without "Ti" will go to "NVG" category;
+				only scopes with "Normal" mode but without "Ti" and "NVG" will go to "Normal" category;
+				only scopes without special modes will go to "none" category. No duplications: each scope
+				goes for its best category.
+		return: Array: [[(noneScope1, ...)], [(normalScope1, ...)], [(nvgScope1, ...)], [(tiScope1, ...)]]
+			noneScope1, normalScope1, nvgScope1, tiScope1, ...: Strings
+	*/
+	private ["_clName", "_full", "_ret", "_none", "_normal", "_nvg", "_ti"];
+	_none = [];
+	_normal = [];
+	_nvg = [];
+	_ti = [];
+	_clName = [_this, 0, "", [""]] call BIS_fnc_param;
+	_full = [_this, 1, false, [true]] call BIS_fnc_param;
+	if (isClass (configFile >> "CfgWeapons" >> _clName)) then {
+		private "_opt";
+		_opt = [_clName, "CowsSlot"] call pdth_fnc_weapon_slot_comp_items;
+		if ((!(isNil "_opt")) && ((count _opt) > 0)) then {
+			{
+				private ["_optName", "_visModes", "_optModes", "_hasEmpty", "_hasNonEmpty"];
+				_optName = _x;
+				_visModes = [];
+				_hasEmpty = false;
+				_hasNonEmpty = false;
+				_optModes = "true" configClasses (configFile >> "CfgWeapons" >> _optName >> "ItemInfo" >> "OpticModes");
+				{
+					private "_optMod";
+					_optMod = _x;
+					_visModes = (getArray(configFile >> "CfgWeapons" >> _optName >> "ItemInfo" >> "OpticModes" >> _x));
+					scopeName "optMode";
+					if ((count _visModes) > 0) then {
+						_hasNonEmpty = true;
+						if ("Ti" in _visModes) then {
+							_ti pushBack _optName;
+							if (!_full) then {
+								breakTo "optMode";
+							};
+						};
+						if ("NVG" in _visModes) then {
+							_nvg pushBack _optName;
+							if (!_full) then {
+								breakTo "optMode";
+							};
+						};
+						if ("Normal" in _visModes) then {
+							_normal pushBack _optName;
+						};
+					} else {
+						_hasEmpty = true;
+					};
+				} forEach _optModes;
+				if (_hasEmpty && !_hasNonEmpty) then {
+					_none pushBack _optName;
+				};
+			} forEach _opt;
+		};
+	};
+	_ret = [_none, _normal, _nvg, _ti];
+	_ret
 };
 
 drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
-	private["_nighttime"];
-    _this setVehicleAmmo (0.2 + random 0.6);
+	private["_nighttime", "_pWeap", "_marksman", "_rnd"];
+	_this setVehicleAmmo (0.2 + random 0.6);
 	if(daytime > 20 OR daytime < 8) then {
 		_nighttime = true;
 	} else {
@@ -26,94 +124,134 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 	_this setskill ["courage", 0.2];
 	_this setskill ["endurance", 0.2];
 
+	_this removeItem "FirstAidKit";
 
-
-    //_this setSkill (a3e_var_Escape_enemyMinSkill + random (a3e_var_Escape_enemyMaxSkill - a3e_var_Escape_enemyMinSkill));
-
-	//[_this, a3e_var_Escape_enemyMinSkill] call EGG_EVO_skill;
-
-
-    //player sideChat str (precision _this);
-    //player sideChat (str (precision _this) + "   "  + str(_this skill "aimingAccuracy"));
-
-    _this removeItem "FirstAidKit";
-
-	//Chance for a random scope (and no scope):
-	if(random 100 < 70) then {
-
-		removeAllPrimaryWeaponItems _this;
-		if((random 100 < 30)) then {
-			_scopes = A3E_arr_Scopes;
-			if(Param_NoNightvision==0) then {
-				_scopes = _scopes + A3E_arr_TWSScopes;
-			};
-			if(_nighttime) then {
-				_scopes = _scopes + A3E_arr_NightScopes;
-			};
-			_scope = _scopes select floor(random(count(_scopes)));
-			_this addPrimaryWeaponItem _scope;
-		};
-	};
+	_marksman = false;
 	_pWeap = primaryWeapon _this;
-	if (_pWeap in a3e_arr_PSO_Rifles) then {
-		systemChat format ["PSO, pos %1", str position _this];
-		_this addPrimaryWeaponItem "rhs_acc_pso1m2";
-		_this setVehicleAmmo (0.7 + random 0.2);
-	} else {
-		if (_pWeap in a3e_arr_NPZ_Rifles) then {
-			systemChat format ["LEUPOLD, pos %1", str position _this];
-			_this addPrimaryWeaponItem "rhsusf_acc_LEUPOLDMK4";
-			_this setVehicleAmmo (0.7 + random 0.2);
+	if (_pWeap != "") then {
+		if ("rhs_weap_svd" in ([(configFile >> "CfgWeapons" >> _pWeap), true] call BIS_fnc_returnParents)) then {
+			_marksman = true;
+			_this setVehicleAmmo (0.6 + random 0.2);
 		};
 	};
+
+	// chances for scopes
+	removeAllPrimaryWeaponItems _this;
+	// 30% chance to have a scope for non-marksman
+	if ((random 100 < 30) || _marksman) then {
+		if (_pWeap != "") then {
+			private ["_opt", "_optTi", "_optNVG", "_optNormalOnly", "_optNone", "_wNo", "_wNrm", "_wNVG", "_wTi", "_wTotal", "_wRnd", "_scope"];
+			_opt = [_pWeap] call pdth_fnc_weapon_scopes;
+			_optNone = [_opt, 0, [], [[]]] call BIS_fnc_param;
+			_optNormal = [_opt, 1, [], [[]]] call BIS_fnc_param;
+			_optNVG = [_opt, 2, [], [[]]] call BIS_fnc_param;
+			_optTi = [_opt, 3, [], [[]]] call BIS_fnc_param;
+			// _optTi only contains scopes w/ thermal
+			// _optNVG only contains scopes w/o thermal, but w/ nvg
+			// _optNormalOnly only contains scopes w/o thermal and nvg, but with normal optic zoom (not compatible with nv goggles)
+			// _optNone only contains scopes w/o any special vis mode (compatible w/ nv goggles) <--- collimators go there!
+			// Weights for different scopes, not actual percents due to params and conditions
+			if (_nighttime) then {
+				_wNo = if ((count _optNone) > 0) then {10} else {0}; // those are scopes! collimators, ACO, RCO, MRCO, etc. goes here. "No" means no special vis mode here
+				_wNrm = if ((count _optNormal) > 0) then {30} else {0};
+				_wNVG = if ((Param_NoNightvision==0) && ((count _optNVG) > 0)) then {50} else {0};
+				_wTi = if ((Param_NoNightvision==0) && ((count _optTi) > 0)) then {10} else {0};
+			} else {
+				_wNo = if ((count _optNone) > 0) then {60} else {0};
+				_wNrm = if ((count _optNormal) > 0) then {30} else {0};
+				_wNVG = 0; // NVG scopes usually do not have "turn off" option for NVG mode, so unusable in daytime anyway
+				_wTi = if ((Param_NoNightvision==0) && ((count _optTi) > 0)) then {10} else {0};
+			};
+			if (_marksman) then {
+				// nobody ever uses SVD w/o Normal scope
+				_wNo = 0;
+			};
+			_wTotal = _wNo + _wNrm + _wNVG + _wTi;
+			_wRnd = random _wTotal;
+			_scope = "";
+			if (_wRnd < _wNo) then {
+				if ((count _optNone) > 0) then {
+					_scope = _optNone select floor(random(count(_optNone)));
+				};
+			} else {
+				if (_wRnd < (_wNo+_wNrm)) then {
+					if ((count _optNormal) > 0) then {
+						_scope = _optNormal select floor(random(count(_optNormal)));
+					};
+				} else {
+					if (_wRnd < (_wNo+_wNrm+_wNVG)) then {
+						if ((count _optNVG) > 0) then {
+							_scope = _optNVG select floor(random(count(_optNVG)));
+						};
+					} else {
+						if ((count _optTi) > 0) then {
+							_scope = _optTi select floor(random(count(_optTi)));
+						};
+					};
+				};
+			};
+			if (_scope != "") then {
+				_this addPrimaryWeaponItem _scope;
+			};
+		};
+	};
+
 	//Chance for random attachment
 	if(((random 100 < 15) && (!_nighttime)) OR ((random 100 < 70) && (_nighttime))) then {
-		if(random 100 < 70) then {
-			_this addPrimaryWeaponItem "acc_flashlight";
-		} else {
-			_this addPrimaryWeaponItem "acc_pointer_IR";
+		if (_pWeap != "") then {
+			private "_ptrs";
+			_ptrs = [_pWeap, "PointerSlot"] call pdth_fnc_weapon_slot_comp_items;
+			if (!(isNil "_ptrs")) then {
+				if ((count _ptrs) > 0) then {
+					_this addPrimaryWeaponItem (_ptrs select floor(random(count(_ptrs))));
+				};
+			};
 		};
 	};
 
 	//Bipod chance
 	if((random 100 < 20)) then {
-		_this addPrimaryWeaponItem (a3e_arr_Bipods select floor(random(count(a3e_arr_Bipods))));
+		if (_pWeap != "") then {
+			private "_bips";
+			_bips = [_pWeap, "UnderBarrelSlot"] call pdth_fnc_weapon_slot_comp_items;
+			if (!(isNil "_bips")) then {
+				if ((count _bips) > 0) then {
+					_this addPrimaryWeaponItem (_bips select floor(random(count(_bips))));
+				};
+			};
+		};
 	};
 
 	//Chance for silencers
 	if(((random 100 < 10) && (!_nighttime)) OR ((random 100 < 40) && (_nighttime))) then {
-		//Not yet
-		// remove next line when previous is ready
-		_this addPrimaryWeaponItem "rhs_acc_dtk";
+		if (_pWeap != "") then {
+			private "_muzs";
+			_muzs = [_pWeap, "MuzzleSlot"] call pdth_fnc_weapon_slot_comp_items;
+			if (!(isNil "_muzs")) then {
+				if ((count _muzs) > 0) then {
+					_this addPrimaryWeaponItem (_muzs select floor(random(count(_muzs))));
+				};
+			};
+		};
 	} else {
 		_this addPrimaryWeaponItem "rhs_acc_dtk";
 	};
-    if (random 100 > 20) then {
-        //_this additem "ItemMap";
-        //_this assignItem "ItemMap";
+	if (random 100 > 20) then {
 		_this unlinkItem "ItemMap";
-    };
+	};
 	if (random 100 > 30) then {
-        //_this additem "ItemCompass";
-        //_this assignItem "ItemCompass";
 		_this unlinkItem "ItemCompass";
-    };
-    if (random 100 > 5) then {
-        //_this additem "ItemGPS";
-       // _this assignItem "ItemGPS";
+	};
+	if (random 100 > 5) then {
 		_this unlinkItem "ItemGPS";
-    };
+	};
 	if ("Binocular" in (assignedItems _this)) then {
 		if (random 100 > 30) then {
-			//_this additem "ItemGPS";
-		   // _this assignItem "ItemGPS";
 			_this unlinkItem "Binocular";
 		};
 	};
 	if ("Rangefinder" in (assignedItems _this)) then {
 		if (random 100 > 30) then {
-			//_this additem "ItemGPS";
-		   // _this assignItem "ItemGPS";
 			_this unlinkItem "Rangefinder";
 		};
 	};
@@ -286,14 +424,20 @@ drn_fnc_Escape_AllPlayersOnStartPos = {
 };
 
 drn_fnc_Escape_GetPlayerGroup = {
-    private ["_units", "_unit", "_group"];
+	private ["_units", "_unit", "_group"];
 
-    _units = call A3E_fnc_GetPlayers;
+	_units = call A3E_fnc_GetPlayers;
 
-    _unit = _units select 0;
-    _group = group _unit;
+	if (!(isNil "_units")) then {
+		if ((typeName _units) == "ARRAY") then {
+			_unit = _units select 0;
+			if (!(isNil "_unit")) then {
+				_group = group _unit;
+			};
+		};
+	};
 
-    _group
+	_group
 };
 
 drn_fnc_Escape_CreateExtractionPointServer = {
