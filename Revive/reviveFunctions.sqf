@@ -588,7 +588,7 @@ PDTH_FNC_CopyTypedCargo = {
 				4:	copy weapons
 			keepAmmo:	keep ammo count in magazines, ony used if 4 is in types, default is false
 			clear:	clear dest container cargo of specified type before copy (e.g. call clearMagazineCargo for magazines), default is false
-			global:	use global variants of functions where possible, default is false
+			global:	use global variants of functions where possible, default is true
 			spawn:	use `spawn' call instead of `call' for typed subcalls; default is false; if `clear' is set to true, this parameter is false.
 				The rationale for this is as follows. This method parses `types' parameter and calls/spawns itself for each separate type
 				(if more than one, otherwise neither call nor spawn is used).
@@ -605,7 +605,7 @@ PDTH_FNC_CopyTypedCargo = {
 	_types = [_this, 2, 7, [0]] call BIS_fnc_param;
 	_keepAmmoCount = [_this, 3, false, [true]] call BIS_fnc_param;
 	_clear = [_this, 4, false, [true]] call BIS_fnc_param;
-	_global = [_this, 5, false, [true]] call BIS_fnc_param;
+	_global = [_this, 5, true, [true]] call BIS_fnc_param;
 	_spawn = [_this, 6, false, [true]] call BIS_fnc_param;
 	if (_clear) then {
 		_spawn = false;
@@ -649,7 +649,7 @@ PDTH_FNC_CopyTypedCargo = {
 				_arr = magazinesAmmoCargo _contSrc;
 				if(count(_arr)>0) then {
 					{
-						// seems there's no Global variant of this function
+						// addMagazineAmmoCargo is aG / eG commnad (and no local variant)
 						_contDest addMagazineAmmoCargo [_x select 0, 1, _x select 1];
 					} forEach _arr;
 				};
@@ -687,7 +687,7 @@ PDTH_FNC_CopyTypedCargo = {
 										_contDest addItemCargoGlobal [_x, 1];
 									} else {
 										if (typeName _x == "ARRAY") then {
-											// this function does not have Global variant yet
+											// addMagazineAmmoCargo is aG / eG commnad (and no local variant)
 											_contDest addMagazineAmmoCargo _x;
 										};
 									};

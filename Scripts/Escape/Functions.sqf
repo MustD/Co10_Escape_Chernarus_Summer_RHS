@@ -28,8 +28,10 @@ pdth_fnc_weapon_slot_comp_items = {
 	_slName = [_this, 1, "", [""]] call BIS_fnc_param;
 	if ((isClass (configFile >> "CfgWeapons" >> _clName)) && (isClass (configFile >> "CfgWeapons" >> _clName >> "WeaponSlotsInfo" >> _slName))) then {
 		_ret = getArray(configFile >> "CfgWeapons" >> _clName >> "WeaponSlotsInfo" >> _slName >> "compatibleItems");
+		_ret
+	} else {
+		nil
 	};
-	_ret
 };
 
 pdth_fnc_weapon_scopes = {

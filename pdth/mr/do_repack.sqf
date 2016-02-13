@@ -261,6 +261,9 @@ if (!_haveSV) then {
 						_caller playMove _pmars;
 					};
 				};
+				if (_plC) then {
+					_caller groupChat "Repack started...";
+				};
 				if (!isNil "_pmtrb") then {
 					sleep _pmtrb;
 				};
@@ -277,6 +280,9 @@ if (!_haveSV) then {
 							breakTo "_nrMagsSN";
 						};
 					} forEach _amMags;
+					if (_plC) then {
+						_caller groupChat format ["Repacking '%1'", _dispNm];
+					};
 					switch (_rptype) do {
 						case "NONROUNDWISE": {
 							if (_remain > 0) then {
@@ -285,7 +291,7 @@ if (!_haveSV) then {
 								if (_haveSV) then {
 									_cancel = true;
 									if (_plC) then {
-										_caller groupChat "Repack cancelled";
+										_caller groupChat "Repack cancelled.";
 									};
 									breakTo "roundwise";
 								};
@@ -364,13 +370,27 @@ if (!_haveSV) then {
 									_canTake = _leftToPut;
 								};
 								if (_clName in pdth_mr_chained_mags) then {
-									/// @todo
 									/// chains are treated specially: you don't need to remove all ammo from one chain to put them to another
+									if (!isNil "pdth_mr_sound_chainwork") then {
+										playSound3D [pdth_mr_sound_chainwork, _target, false, getPosASL _target, 2, 1, 10];
+									};
+									if (!isNil "_pmtrm") then {
+										sleep _pmtrm;
+									};
+									if (_haveToTake > _leftToPut) then {
+										// if we have longer second chain, than we can connect to first chain, then addition chain cut required
+										if (!isNil "pdth_mr_sound_chainwork") then {
+											playSound3D [pdth_mr_sound_chainwork, _target, false, getPosASL _target, 2, 1, 10];
+										};
+										if (!isNil "_pmtrm") then {
+											sleep _pmtrm;
+										};
+									};
 								} else {
 									if (!isNil "_pmtrru") then {
 										for [{_i=0}, {_i < _canTake}, {_i = _i + 1}] do {
 											sleep _pmtrru;
-											if (!isNil "pdth_mr_time_repack_rw_round_unload") then {
+											if (!isNil "pdth_mr_sound_round_click_unload") then {
 												playSound3D [pdth_mr_sound_round_click_unload, _target, false, getPosASL _target, 2, 1.8, 10];
 											};
 
@@ -446,6 +466,16 @@ if (!_haveSV) then {
 								if (!isNil "_pmtrm") then {
 									sleep _pmtrm;
 								};
+								_haveSV = ([ "pdth_mr_repack_cancelled", true, [_target, _caller]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)
+									//|| (_plC && (((animationState _caller) find "medic") == -1))
+									;
+								if (_haveSV) then {
+									_cancel = true;
+									if (_plC) then {
+										_caller groupChat format ["Repack cancelled."];
+									};
+									breakTo "roundwise";
+								};
 							};
 							_var = _cancel && (_iPut < _iTake) && (((_mCounts select _iPut) select 1) < _fullMagCount);
 							for [{_i=_iPut}, {_i <= _iTake}, {_i = _i + 1}] do {
@@ -478,6 +508,9 @@ if (!_haveSV) then {
 			_var = _target call pdth_mr_has_repack;
 			_target setVariable ["pdth_mr_repack_show_action", _var, true];
 		} else {
+			if (_plC) then {
+				_caller groupChat "Repack finished.";
+			};
 			_target setVariable ["pdth_mr_repack_show_action", false, true];
 		};
 		_target setVariable ["pdth_mr_repack_runs", false, true];

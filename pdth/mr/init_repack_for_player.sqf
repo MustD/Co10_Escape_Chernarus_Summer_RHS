@@ -28,6 +28,7 @@ pdth_mr_anim_repack_end = "AinvPknlMstpSnonWrflDnon_medicEnd";
 // played with volume 1.2 and pitch 1.8, so sounds differently from next even if the same name
 pdth_mr_sound_round_click_unload = "A3\Sounds_F\arsenal\weapons\Pistols\Acpc2\dry_Acpc2.wss";
 pdth_mr_sound_round_click = "A3\Sounds_F\arsenal\weapons\Pistols\Acpc2\dry_Acpc2.wss";
+pdth_mr_sound_chainwork = "A3\Sounds_F\arsenal\weapons\LongRangeRifles\Mk18\Mk18_reload.wss";
 // Chains
 // Chained MGs
 // Taking magazines[] from this classes we can make a list of all used chains
