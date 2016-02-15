@@ -132,7 +132,7 @@ class RscStructuredText {
 		color = "#000000";
 		align = "center";
 		valign = "middle";
-		shadow = false;
+		shadow = 0;
 		shadowColor = "#ff0000";
 		size = "2";
 	  };
@@ -829,7 +829,7 @@ class RscMapControl {
 class ATHSC_Main
 {
 	idd = 123;
-	movingenable = false;
+	movingenable = 0;
 	onLoad = "uiNamespace setVariable ['ATHSC_Main_Dialog', (_this select 0)];";
 	onUnload = "";
 

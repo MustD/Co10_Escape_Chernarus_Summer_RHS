@@ -10,7 +10,7 @@ class Header
 
 
 onLoadMission = MISSIONNAME;
-OnLoadMissionTime = FALSE;
+OnLoadMissionTime = 0;
 dev = "NeoArmageddon and Scruffy";
 briefingName = MISSIONNAME;
 author = "NeoArmageddon and Scruffy";
