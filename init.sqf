@@ -83,4 +83,4 @@ if (isServer) then {
 	};
 };
 
-call compile preprocessFileLineNumbers ("pdth\mr\init_repack_for_player.sqf");
+[] spawn compile preprocessFileLineNumbers ("pdth\mr\init_repack_for_player.sqf");

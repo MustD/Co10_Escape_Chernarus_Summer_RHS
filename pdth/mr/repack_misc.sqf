@@ -257,7 +257,7 @@ pdth_mr_respawn_handler ={
 		//waitUntil {alive _new};
 		_idAction = _new addAction [
 			"<t color='#FFCC99'>Repack magazines</t>",
-			{_this call pdth_mr_do_repack},
+			{_this spawn pdth_mr_do_repack},
 			[ // See pdth_mr_do_repack parameters description
 				"ROUNDWISE",
 				pdth_mr_stop_vars,

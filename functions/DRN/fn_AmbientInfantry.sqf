@@ -133,6 +133,7 @@ while {true} do {
             //setskills
             _x setUnitRank "PRIVATE";
 //			[_x, a3e_var_Escape_enemyMinSkill] call EGG_EVO_skill;
+		_x call drn_fnc_Escape_OnSpawnGeneralSoldierUnit;
 
             // Run custom code for units and group
             _x setVariable ["drn_scriptHandle", _x spawn _fnc_OnSpawnUnit]; // Squint complaining, but is ok.

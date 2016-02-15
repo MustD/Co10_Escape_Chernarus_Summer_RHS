@@ -510,18 +510,18 @@ waitUntil {scriptDone _scriptHandle};
 
 // Spawn creation of start position settings
 [A3E_StartPos, _enemyMinSkill, _enemyMaxSkill, _enemyFrequency, _fenceRotateDir] spawn {
-    private ["_startPos", "_enemyMinSkill", "_enemyMaxSkill", "_guardsAreArmed", "_guardsExist", "_guardLivesLong", "_enemyFrequency", "_fenceRotateDir"];
-    private ["_backpack","_debugAllUnits","_i", "_guard", "_guardGroup", "_marker", "_guardCount", "_guardGroups", "_unit", "_createNewGroup", "_guardPos"];
+	private ["_startPos", "_enemyMinSkill", "_enemyMaxSkill", "_guardsAreArmed", "_guardsExist", "_guardLivesLong", "_enemyFrequency", "_fenceRotateDir"];
+	private ["_backpack","_debugAllUnits","_i", "_guard", "_guardGroup", "_marker", "_guardCount", "_guardGroups", "_unit", "_createNewGroup", "_guardPos"];
 
-    _startPos = _this select 0;
-    _enemyMinSkill = _this select 1;
-    _enemyMaxSkill = _this select 2;
-    _enemyFrequency = _this select 3;
-    _fenceRotateDir = _this select 4;
+	_startPos = _this select 0;
+	_enemyMinSkill = _this select 1;
+	_enemyMaxSkill = _this select 2;
+	_enemyFrequency = _this select 3;
+	_fenceRotateDir = _this select 4;
 
-    // Spawn guard
+	// Spawn guard
 
-    _guardPos = [_startPos, [(_startPos select 0) - 4, (_startPos select 1) + 4, 0], _fenceRotateDir] call drn_fnc_CL_RotatePosition;
+	_guardPos = [_startPos, [(_startPos select 0) - 4, (_startPos select 1) + 4, 0], _fenceRotateDir] call drn_fnc_CL_RotatePosition;
 
 	_backpack = "B_AssaultPack_khk" createvehicle _startPos;
 
@@ -531,50 +531,50 @@ waitUntil {scriptDone _scriptHandle};
 		_backpack addMagazineCargoGlobal[(_weapon select 1),3];
 	};
 
-    // Spawn more guards
-    _marker = createMarkerLocal ["drn_guardAreaMarker", _startPos];
-    _marker setMarkerAlpha 0;
-    _marker setMarkerShapeLocal "ELLIPSE";
-    _marker setMarkerSizeLocal [50, 50];
+	// Spawn more guards
+	_marker = createMarkerLocal ["drn_guardAreaMarker", _startPos];
+	_marker setMarkerAlpha 0;
+	_marker setMarkerShapeLocal "ELLIPSE";
+	_marker setMarkerSizeLocal [50, 50];
 
-    _guardCount = (2 + (_enemyFrequency)) + floor (random 2);
+	_guardCount = (2 + (_enemyFrequency)) + floor (random 2);
 
-    _guardGroups = [];
-    _createNewGroup = true;
+	_guardGroups = [];
+	_createNewGroup = true;
 
-    for [{_i = 0}, {_i < _guardCount}, {_i = _i + 1}] do {
-        private ["_pos"];
+	for [{_i = 0}, {_i < _guardCount}, {_i = _i + 1}] do {
+		private ["_pos"];
 
-        _pos = [_marker] call drn_fnc_CL_GetRandomMarkerPos;
-        while {_pos distance _startPos < 10} do {
-            _pos = [_marker] call drn_fnc_CL_GetRandomMarkerPos;
-        };
+		_pos = [_marker] call drn_fnc_CL_GetRandomMarkerPos;
+		while {_pos distance _startPos < 10} do {
+			_pos = [_marker] call drn_fnc_CL_GetRandomMarkerPos;
+		};
 
-        if (_createNewGroup) then {
-            _guardGroup = createGroup A3E_VAR_Side_Ind;
-            _guardGroups set [count _guardGroups, _guardGroup];
-            _createNewGroup = false;
-        };
+		if (_createNewGroup) then {
+			_guardGroup = createGroup A3E_VAR_Side_Ind;
+			_guardGroups set [count _guardGroups, _guardGroup];
+			_createNewGroup = false;
+		};
 
-        //(a3e_arr_Escape_StartPositionGuardTypes select floor (random count a3e_arr_Escape_StartPositionGuardTypes)) createUnit [_pos, _guardGroup, "", (0.5), "CAPTAIN"];
-        _guardGroup createUnit [(a3e_arr_Escape_StartPositionGuardTypes select floor (random count a3e_arr_Escape_StartPositionGuardTypes)), _pos, [], 0, "FORM"];
+		//(a3e_arr_Escape_StartPositionGuardTypes select floor (random count a3e_arr_Escape_StartPositionGuardTypes)) createUnit [_pos, _guardGroup, "", (0.5), "CAPTAIN"];
+		_guardGroup createUnit [(a3e_arr_Escape_StartPositionGuardTypes select floor (random count a3e_arr_Escape_StartPositionGuardTypes)), _pos, [], 0, "FORM"];
 
-        if (count units _guardGroup >= 2) then {
-            _createNewGroup = true;
-        };
-    };
+		if (count units _guardGroup >= 2) then {
+			_createNewGroup = true;
+		};
+	};
 
-    {
-        _guardGroup = _x;
+	{
+		_guardGroup = _x;
 
-        _guardGroup setFormDir floor (random 360);
+		_guardGroup setFormDir floor (random 360);
 
-        {
-            _unit = _x; //(units _guardGroup) select 0;
-            _unit setUnitRank "CAPTAIN";
+		{
+			_unit = _x; //(units _guardGroup) select 0;
+			_unit setUnitRank "CAPTAIN";
 			_unit unlinkItem "ItemMap";
-            _unit unlinkItem "ItemCompass";
-            _unit unlinkItem "ItemGPS";
+			_unit unlinkItem "ItemCompass";
+			_unit unlinkItem "ItemGPS";
 
 			if(random 100 < 80) then {
 				removeAllPrimaryWeaponItems _unit;
@@ -582,28 +582,20 @@ waitUntil {scriptDone _scriptHandle};
 			};
 			private["_hmd"];
 			_hmd = hmd _unit;
-            if ((random 100 > 20) || (Param_NoNightvision==1)) then {
+			if ((random 100 > 20) || (Param_NoNightvision==1)) then {
 				if(_hmd != "") then {
 					_unit unlinkItem _hmd;
 				};
-            };
+			};
 
-            //_unit setSkill a3e_var_Escape_enemyMinSkill;
+			//_unit setSkill a3e_var_Escape_enemyMinSkill;
 			//[_unit, a3e_var_Escape_enemyMinSkill] call EGG_EVO_skill;
+			_unit setVehicleAmmo 0.3 + random 0.7;
+			_unit spawn pdth_rm_grenades;
+		} foreach units _guardGroup;
 
-	    // "Note: You may create invalid combinations with this function. When doing so, application behaviour is undefined." // https://community.bistudio.com/wiki/removeMagazines
-            //_unit removeMagazines "Handgrenade";
-	    while {("Handgrenade" in (magazines _unit))} do {
-		    _unit removeMagazineGlobal "Handgrenade";
-	    };
-
-            _unit setVehicleAmmo 0.3 + random 0.7;
-
-        } foreach units _guardGroup;
-
-        [_guardGroup, _marker] spawn drn_fnc_SearchGroup;
-
-    } foreach _guardGroups;
+		[_guardGroup, _marker] spawn drn_fnc_SearchGroup;
+	} foreach _guardGroups;
 
 	//Add an alert trigger to the prison
 
@@ -628,19 +620,20 @@ waitUntil {scriptDone _scriptHandle};
 			_guardGroup reveal _x;
 		} foreach call A3E_fnc_GetPlayers;
 	};
-    // Start thread that waits for escape to start
-    [_guardGroups, _startPos] spawn {
-        private ["_guardGroups", "_startPos"];
 
-        _guardGroups = _this select 0;
-        _startPos = _this select 1;
+	// Start thread that waits for escape to start
+	[_guardGroups, _startPos] spawn {
+		private ["_guardGroups", "_startPos"];
 
-        sleep 5;
+		_guardGroups = _this select 0;
+		_startPos = _this select 1;
 
-        while {isNil("A3E_EscapeHasStarted")} do {
+		sleep 5;
+
+		while {isNil("A3E_EscapeHasStarted")} do {
 			sleep 1;
-            // If any member of the group is to far away from fence, then escape has started
-            {
+			// If any member of the group is to far away from fence, then escape has started
+			{
 				if(_x getvariable ["A3E_PlayerInitialized",false]) then {
 					if ((_x distance A3E_StartPos) > 15 && (_x distance A3E_StartPos) < 100) exitWith {
 						A3E_EscapeHasStarted = true;
@@ -654,16 +647,15 @@ waitUntil {scriptDone _scriptHandle};
 						systemChat "Player has weapon!";
 					};
 				};
-            } foreach call A3E_FNC_GetPlayers;
-        };
+			} foreach call A3E_FNC_GetPlayers;
+		};
 
-        // ESCAPE HAS STARTED
-        //{
+		// ESCAPE HAS STARTED
+		//{
 		//	[[[_x], {(_this select 0) setCaptive false;}], "BIS_fnc_spawn", _x, false] call BIS_fnc_MP;
 		//} foreach call A3E_fnc_GetPlayers;
-	   systemChat "Server: Escape has started.";
-
-    };
+		systemChat "Server: Escape has started.";
+	};
 	//Spawn alarm watchdog
 	[_guardGroups] spawn {
 	  private ["_guardGroups"];

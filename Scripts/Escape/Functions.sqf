@@ -8,7 +8,6 @@ A3E_fnc_GetPlayers = {
 pdth_fnc_weapon_slot_comp_items = {
 	/**
 		Return list of compatible attachments suitable for specified weapon and for specifiied slot
-		In case of error (e.g. specified class names are invalid) returns nil (to distinguish from valid empty array return).
 		_this: Array: [ className, slotName ]:
 			className: String: weapon class name
 			slotName: String: slot class name, representing class entry in ()
@@ -24,14 +23,23 @@ pdth_fnc_weapon_slot_comp_items = {
 			_arrPointers = ["arifle_MX_F", "PointerSlot"] call pdth_fnc_weapon_slot_comp_items;
 	**/
 	private ["_clName", "_slName", "_ret"];
+	_ret = [];
 	_clName = [_this, 0, "", [""]] call BIS_fnc_param;
 	_slName = [_this, 1, "", [""]] call BIS_fnc_param;
 	if ((isClass (configFile >> "CfgWeapons" >> _clName)) && (isClass (configFile >> "CfgWeapons" >> _clName >> "WeaponSlotsInfo" >> _slName))) then {
-		_ret = getArray(configFile >> "CfgWeapons" >> _clName >> "WeaponSlotsInfo" >> _slName >> "compatibleItems");
-		_ret
-	} else {
-		nil
+		private "_compItems";
+		_compItems = (configFile >> "CfgWeapons" >> _clName >> "WeaponSlotsInfo" >> _slName >> "compatibleItems");
+		if (isClass _compItems) then {
+			{
+				_ret pushBack (configName _x);
+			} forEach (configProperties [_compItems, "(isNumber _x) && ((getNumber _x) > 0)"]);
+		} else {
+			if (isArray _compItems) then {
+				_ret = getArray(_compItems);
+			}
+		}
 	};
+	_ret
 };
 
 pdth_fnc_weapon_scopes = {
@@ -68,11 +76,11 @@ pdth_fnc_weapon_scopes = {
 				_visModes = [];
 				_hasEmpty = false;
 				_hasNonEmpty = false;
-				_optModes = "true" configClasses (configFile >> "CfgWeapons" >> _optName >> "ItemInfo" >> "OpticModes");
+				_optModes = configProperties [(configFile >> "CfgWeapons" >> _optName >> "ItemInfo" >> "OpticsModes")];
 				{
 					private "_optMod";
 					_optMod = _x;
-					_visModes = (getArray(configFile >> "CfgWeapons" >> _optName >> "ItemInfo" >> "OpticModes" >> _x));
+					_visModes = (getArray(_x >> "visionMode"));
 					scopeName "optMode";
 					if ((count _visModes) > 0) then {
 						_hasNonEmpty = true;
@@ -89,7 +97,13 @@ pdth_fnc_weapon_scopes = {
 							};
 						};
 						if ("Normal" in _visModes) then {
-							_normal pushBack _optName;
+							if (_full && ("rhs_acc_1pn93_base" in ([(configFile >> "CfgWeapons" >> _optName),true] call BIS_fnc_returnParents))) then {
+								// rhs_acc_1pn93_* are broken in RHS 0.3.7, they have ironsight optics mode with "Normal" visMode, when actually there's no "Normal", only visionMode[]={}
+								_none pushBack _optName;
+								_hasEmpty = true;
+							} else {
+								_normal pushBack _optName;
+							};
 						};
 					} else {
 						_hasEmpty = true;
@@ -103,6 +117,39 @@ pdth_fnc_weapon_scopes = {
 	};
 	_ret = [_none, _normal, _nvg, _ti];
 	_ret
+};
+
+pdth_rm_grenades = {
+	if (((productVersion) select 2) == 142) then {
+		// Dirty fix for ArmA3 v1.42 legacyPort with RHS0.3.7,
+		// which caused crazy crashes when players looted and
+		// used RGD-5 grenades (and maybe other grenades)
+		private ["_u", "_mags", "_checked", "_count"];
+		if ((typeName _this) == "ARRAY") then {
+			_u = _this select 0;
+		} else {
+			_u = _this;
+		};
+		_mags = magazines _u;
+		_count = 0;
+		_checked = [];
+		{
+			private "_mag";
+			_mag = _x;
+			if (!(_mag in _checked)) then {
+				if ("HandGrenade" in ([(configFile >> "CfgMagazines" >> _mag),true] call BIS_fnc_returnParents)) then {
+					while {(_mag in (magazines _u))} do {
+						_u removeMagazineGlobal _mag;
+						_count = _count + 1;
+					};
+				};
+				_checked pushBack _mag;
+			};
+		} forEach _mags;
+//		if (_count > 0) then {
+//			_u addMagazine ["Handgrenade", _count];
+//		};
+	};
 };
 
 drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
@@ -133,12 +180,13 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 	if (_pWeap != "") then {
 		if ("rhs_weap_svd" in ([(configFile >> "CfgWeapons" >> _pWeap), true] call BIS_fnc_returnParents)) then {
 			_marksman = true;
-			_this setVehicleAmmo (0.6 + random 0.2);
+			// this will still be very few
+			_this setVehicleAmmo (0.8 + random 0.2);
 		};
 	};
 
-	// chances for scopes
 	removeAllPrimaryWeaponItems _this;
+	// chances for scopes
 	// 30% chance to have a scope for non-marksman
 	if ((random 100 < 30) || _marksman) then {
 		if (_pWeap != "") then {
@@ -198,7 +246,7 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 		};
 	};
 
-	//Chance for random attachment
+	//Chance for random pointer attachment
 	if(((random 100 < 15) && (!_nighttime)) OR ((random 100 < 70) && (_nighttime))) then {
 		if (_pWeap != "") then {
 			private "_ptrs";
@@ -278,6 +326,7 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 			_this linkItem "NVGoggles_OPFOR";
 		};
 	};
+	//_this spawn pdth_rm_grenades;
 };
 
 drn_fnc_Escape_FindGoodPos = {
@@ -429,6 +478,7 @@ drn_fnc_Escape_GetPlayerGroup = {
 	private ["_units", "_unit", "_group"];
 
 	_units = call A3E_fnc_GetPlayers;
+	_group = objNull;
 
 	if (!(isNil "_units")) then {
 		if ((typeName _units) == "ARRAY") then {
@@ -786,7 +836,7 @@ drn_fnc_Escape_FindSpawnSegment = {
 
     _isOk = false;
     _tries = 0;
-    while {!_isOk && _tries < 25 && !isNil "_refUnit"} do {
+    while {!_isOk && _tries < 25 && (!(isNil "_refUnit"))} do {
         _isOk = true;
 
         _dir = random 360;
@@ -861,6 +911,7 @@ drn_fnc_Escape_PopulateVehicle = {
         _insurgentSoldier = _group createUnit [_unitType, [0,0,0], [], 0, "FORM"];
 
         _insurgentSoldier setRank "LIEUTNANT";
+	_insurgentSoldier call drn_fnc_Escape_OnSpawnGeneralSoldierUnit;
         _insurgentSoldier moveInDriver _vehicle;
 
         if (vehicle _insurgentSoldier != _insurgentSoldier) then {
@@ -880,6 +931,7 @@ drn_fnc_Escape_PopulateVehicle = {
         _insurgentSoldier = _group createUnit [_unitType, [0,0,0], [], 0, "FORM"];
 
         _insurgentSoldier setRank "LIEUTNANT";
+	_insurgentSoldier call drn_fnc_Escape_OnSpawnGeneralSoldierUnit;
         _insurgentSoldier moveInGunner _vehicle;
 
         if (vehicle _insurgentSoldier != _insurgentSoldier) then {
@@ -899,6 +951,7 @@ drn_fnc_Escape_PopulateVehicle = {
         _insurgentSoldier = _group createUnit [_unitType, [0,0,0], [], 0, "FORM"];
 
         _insurgentSoldier setRank "LIEUTNANT";
+	_insurgentSoldier call drn_fnc_Escape_OnSpawnGeneralSoldierUnit;
         _insurgentSoldier moveInCommander _vehicle;
 
         if (vehicle _insurgentSoldier != _insurgentSoldier) then {
@@ -918,6 +971,7 @@ drn_fnc_Escape_PopulateVehicle = {
         _insurgentSoldier = _group createUnit [_unitType, [0,0,0], [], 0, "FORM"];
 
         _insurgentSoldier setRank "LIEUTNANT";
+	_insurgentSoldier call drn_fnc_Escape_OnSpawnGeneralSoldierUnit;
         _insurgentSoldier moveInCargo _vehicle;
 
         if (vehicle _insurgentSoldier != _insurgentSoldier) then {

@@ -47,6 +47,7 @@ for "_i" from 1 to _soldiersCount do {
     //_insurgentSoldier setSkill (_minSkill + random (_maxSkill - _minSkill));
 //	[_insurgentsoldier, a3e_var_Escape_enemyMinSkill] call EGG_EVO_skill;
     _insurgentSoldier setRank "LIEUTNANT";
+    _insurgentSoldier call drn_fnc_Escape_OnSpawnGeneralSoldierUnit;
     _insurgentSoldier moveInCargo _vehicle;
     _insurgentSoldier assignAsCargo _vehicle;
     _insurgentSoldiers set [count _insurgentSoldiers, _insurgentSoldier];

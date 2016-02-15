@@ -10,7 +10,7 @@
 	See also comments in pdth/mr/has_repack.sqf, pdth/mr/do_repack.sqf and pdth/mr/repack_misc.sqf
 */
 
-// CONFIGURABLE VARIABLES
+// CONFIG SECTION
 // repack type: 0 - non-roundwise; 1 - roundwise
 pdth_mr_repack_type = 1;
 pdth_mr_time_repack_base = 2; // common delay on repack start
@@ -19,7 +19,7 @@ pdth_mr_time_repack_class = 6; // time to repack all mags of some class
 // roundwise repack delays
 pdth_mr_time_repack_rw_round = 1; // delay per ammo round loaded, applied when round inserted to mag
 pdth_mr_time_repack_rw_round_unload = 0.4; // delay per ammo round unloaded, applied when round removed from other mag for repacking
-pdth_mr_time_repack_rw_mag = 1; // delay per magazine used for repack, applied when mag filled or emptied
+pdth_mr_time_repack_rw_mag = 2; // delay per magazine used for repack, applied when mag filled or emptied
 pdth_mr_allow_cancel_repack_rw = true; // if true there will be action to stop roundwise repack procedure, saving what is already done (for emergency situations)
 // animations for start and end of repack (used with playMove)
 pdth_mr_anim_repack_start = "AinvPknlMstpSnonWrflDnon_medic0";
@@ -66,14 +66,14 @@ pdth_mr_chained_mags_excl = [
 	// if any
 ];
 pdth_mr_chained_mags = pdth_mr_chained_mags_add;
-// 3rd-party variables that shoukd stop repacking, see description of _stopVars in pdth\mr\do_repack.sqf
+// 3rd-party variables that should stop repacking, see description of _stopVars in pdth\mr\do_repack.sqf
 pdth_mr_stop_vars = ["AT_Revive_isUnconscious", true, ["_caller"]];
-// END CONFIGURABLE VARIABLES
+// END CONFIG SECTION
 
 [] spawn {
 	{
 		private ["_mags"];
-		_mags = (getArray(configFile >> "CfgVehicles" >> _x >> "magazines") - pdth_mr_chained_mags_excl) - pdth_mr_chained_mags;
+		_mags = (getArray(configFile >> "CfgWeapons" >> _x >> "magazines") - pdth_mr_chained_mags_excl) - pdth_mr_chained_mags;
 		pdth_mr_chained_mags = pdth_mr_chained_mags + _mags;
 	} forEach pdth_mr_chained_mgs;
 };

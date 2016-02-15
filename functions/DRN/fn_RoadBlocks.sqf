@@ -245,6 +245,7 @@ _fnc_CreateRoadBlock = {
 
     {
         _x setUnitRank "LIEUTNANT";
+	_x call drn_fnc_Escape_OnSpawnGeneralSoldierUnit;
     } foreach units _group;
 
     _units = _units + units _group;

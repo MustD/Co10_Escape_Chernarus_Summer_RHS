@@ -32,7 +32,7 @@ if (count _groups == 0) exitWith {};
 		_spawned = _soldier select 2;
 		_soldierPos = _soldier select 5;
 		_skill = _soldier select 6;
-		//_ammo = _soldier select 7;	
+		//_ammo = _soldier select 7;
 		_rank = _soldier select 8;
 
 		if ((!_spawned) && _damage < 0.75) then {
@@ -47,7 +47,7 @@ if (count _groups == 0) exitWith {};
 
 			_soldier set [2, true];
 			_soldier set [3, _soldierObj];
-			
+
 			if (_rank == "SERGEANT") then {
 				_script = [_newGroup, _markerName] spawn A3E_fnc_Patrol;
 				_newGroup setvariable["A3E_GroupPatrolScript",_script];
@@ -55,7 +55,7 @@ if (count _groups == 0) exitWith {};
 			};
 		};
 	} foreach _soldiers;
-    
+
     //sleep 0.25;
     _newGroup spawn drn_fnc_VillagePatrols_OnSpawnGroup;
 
