@@ -1,7 +1,7 @@
 /**
 	@file pdth/mr/do_repack.sqf
 	@author pedeathtrian
-	@version 0.0.2
+	@version 0.0.3
 
 	This file is a part of pedeathtrian's magazine-repack "pdth/mr" bunch of scripts.
 	This function-as-file combines ammmo from non-full magazines in unit's inventory to full mags, leaving at most one non-full magazine.
@@ -18,19 +18,19 @@
 	@param _this: Array: [_target, (_caller, _id, _args)]
 		_target (_this select 0): unit on which to perform repack of magazines
 		_caller (_this select 1): unit performing action (specified explicitly or trough action mechanism)
-			If called with infantry as this parameter and also delays and animations are set (see below),
+			If called with infantry as this parameter and also delays are set (see below),
 			caller unit kneels and starts to empty magazines with less ammo and fill with them magazines with more ammo,
-			until interrupted or there's no more mags to fill. If delays and sounds are specified (todo),
+			until interrupted or there's no more mags to fill. If delays are specified,
 			repacking is done with sound (sorry, no animation for actual ammo repacking, ask BIS for it).
 		_id (_this select 1): ignored
-		_args: arguments for script, as follows: [_type, _stopVars, _delays, _anims]
+		_args: arguments for script, as follows: [_type, _stopVars, _delays]
 			_type: String: one of: "NONROUNDWISE", "ROUNDWISE"
 			_stopVars: Array: [ [_name, _value, [_object1, ...]], ... ]
 				When repacking with delays, algorithm checks presence of variable _name on list of correspondent entities.
 				If variable present and isEqualTo passed _value, repack cancels (may still need some time).
 				You can specify multiple variable names in separate items in _stopVars.
 				_name: String: name of variable to check
-				_value: String/Array: value to stop repack at (compared with isEqualTo)
+				_values: Array: values (Strings or Arrays) to stop repack at (compared with isEqualTo)
 				_object1, ...: list of anything you can call getVariable on, see https://community.bistudio.com/wiki/getVariable
 					Special value string "_caller" can be specified in array, so that method caller could be used:
 					there's no way for example to pass caller to script's arguments (i.e. _args) when adding action.
@@ -44,10 +44,6 @@
 					delayPerRound: delay required to insert ammo into magazine
 					delayPerRoundUnload: delay required to remove ammo from magazine (performed on some mag before inserting to another)
 					delayPerMag: delay performed on emptying or filling magazine
-			_anims: Array: Strings:
-				[ animStart, animEnd ]
-					animStart: animation move name on start, e.g. to animate repacking, e.g. "AinvPknlMstpSnonWrflDr_medic2"
-					animEnd: animation move name on end, e.g. "AinvPknlMstpSnonWrflDnon_medicEnd" or "": don't forget unit can stuck after starting move
 			You can pass empty array ot nil to immediatelly repack magazines without  animation (e.g. for crates).
 
 	@example
@@ -59,8 +55,7 @@
 		{_this call pdth_mr_do_repack},
 		[
 			"ROUNDWISE",
-			[2, 1, 0.4, 2],
-			["AinvPknlMstpSnonWrflDr_medic2", "AinvPknlMstpSnonWrflDnon_medicEnd"]
+			[2, 1, 0.4, 2]
 		],
 		1.5, false, true, "",
 		"[_target, _this] call pdth_mr_check_repack_player"
@@ -83,43 +78,48 @@
 	@todo pass parameters for playSound3D: name, volume, pitch, max hearable distance;
 		test on containers.
 **/
-private ["_target", "_caller", "_nnT", "_nnC", "_isManT", "_isManC", "_onFootC", "_plC", "_args", "_stopVars", "_haveSV"];
+private ["_target", "_caller", "_nnT", "_nnC", "_isManT", "_isManC", "_onFootC", "_plC", "_args", "_stopVars", "_haveSV", "_localT", "_localC"];
 _target = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
 _caller = [_this, 1, objNull, [objNull]] call BIS_fnc_param;
 _args = [_this, 3, [], [[]]] call BIS_fnc_param;
 // ensure we work with local copy and don't expose local _caller
-_stopVars = [[_args, 1, [], [[]]] call BIS_fnc_param, ["_caller", _caller]] call pdth_mr_deep_copy_w_replace;
-_haveSV = ([ "pdth_mr_repack_runs", true, [_target, _caller]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars);
+_stopVars = [[_args, 1, [], [[]]] call BIS_fnc_param, [["_caller", _caller]]] call pdth_mr_deep_copy_w_replace;
+_haveSV = ([[ "pdth_mr_repack_runs", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars);
 _nnT = (!(isNull _target));
 _nnC = (!(isNull _caller));
 _isManT = false;
 _isManC = false;
 _onFootC = false;
 _plC = false;
+_localT = false;
+_localC = true;
 if (_nnT) then {
 	//_isManT = (typeOf _target) isKindOf ["Man", (configFile >> "CfgVehicles")]; // requires v1.47
 	_isManT = (typeOf _target) isKindOf "Man"; // we anyway scan in "CfgVehicles"
+	_localT = local _target;
 };
 if (_nnC) then {
 	_onFootC = (_caller == (vehicle _caller));
 	if (_caller == _target) then {
 		_isManC = _isManT;
+		_localC = _localT;
 	} else {
 		//_isManC = (typeOf _caller) isKindOf ["Man", (configFile >> "CfgVehicles")]; // requires v1.47
 		_isManC = (typeOf _caller) isKindOf "Man"; // we anyway scan in "CfgVehicles"
+		_localC = local _caller;
 	};
 	_plC = isPlayer _caller;
 };
-if (!_haveSV) then {
+if ((!_haveSV) || (_plC && (!alive _caller))) then {
 	if (_nnT && ((!_nnC) || (_onFootC && _isManC))) then { // if caller is specified, it must be infantry on foot
 		private ["_cancel", "_mags", "_nfMags", "_nrMags", "_amMags", "_clName", "_magCount", "_fullMagCount", "_amFound", "_newFull", "_newCount", "_remain", "_mag", "_oldMags", "_dispNm", "_var"];
 		_cancel = false;
 		_var = false;
 
-		_target setVariable ["pdth_mr_repack_runs", true, true];
+		_target setVariable ["pdth_mr_repack_runs", true, !_localT];
 		if (_target != _caller) then {
 			if (_nnC) then {
-				_caller setVariable ["pdth_mr_repack_runs", true, true];
+				_caller setVariable ["pdth_mr_repack_runs", true, !_localC];
 			};
 		};
 
@@ -189,7 +189,8 @@ if (!_haveSV) then {
 
 			if (count _nrMags > 0) then {
 				// Found not full >1 mags of same class
-				private ["_rptype", "_delays", "_anims", "_pmtrb", "_pmtrc", "_pmtrr", "_pmtrru", "_pmtrm", "_pmars", "_pmare", "_curMuz"];
+				private ["_rptype", "_delays", "_pmtrb", "_pmtrc", "_pmtrr", "_pmtrru", "_pmtrm", "_curMuz", "_haveDelays"];
+				_haveDelays =false;
 				//_args = _this select 3;
 				if (!(isNil "_args")) then {
 					_rptype = _args select 0;
@@ -201,6 +202,8 @@ if (!_haveSV) then {
 							if (!(isNil "_pmtrb")) then {
 								if (_pmtrb <= 0) then {
 									_pmtrb = nil;
+								} else {
+									_haveDelays = true;
 								};
 							};
 							switch (_rptype) do {
@@ -209,6 +212,8 @@ if (!_haveSV) then {
 									if (!(isNil "_pmtrc")) then {
 										if (_pmtrc <= 0) then {
 											_pmtrc = nil;
+										} else {
+											_haveDelays = true;
 										};
 									};
 								};
@@ -217,51 +222,51 @@ if (!_haveSV) then {
 									if (!(isNil "_pmtrr")) then {
 										if (_pmtrr <= 0) then {
 											_pmtrr = nil;
+										} else {
+											_haveDelays = true;
 										};
 									};
 									_pmtrru = _delays select 2;
 									if (!(isNil "_pmtrru")) then {
 										if (_pmtrru <= 0) then {
 											_pmtrru = nil;
+										} else {
+											_haveDelays = true;
 										};
 									};
 									_pmtrm = _delays select 3;
 									if (!(isNil "_pmtrm")) then {
 										if (_pmtrm <= 0) then {
 											_pmtrm = nil;
+										} else {
+											_haveDelays = true;
 										};
 									};
 								};
 							};
 						};
 					};
-					_anims = _args select 3;
-					if (!(isNil "_anims")) then {
-						_pmars = _anims select 0;
-						_pmare = _anims select 1;
-					};
 				};
-				if (!isNil "_pmars") then {
+				if (_plC && _localC) then {
 					// arma seems to have a bug and prematurely interrupts animation if you have a pistol as active weapon
-					if (_isManC) then {
-						if ((primaryWeapon _caller) != "") then {
-							private["_type", "_muzzles"];
-							_type = primaryWeapon _caller;
-							// check for multiple muzzles (eg: GL)
-							_muzzles = getArray(configFile >> "cfgWeapons" >> _type >> "muzzles");
-							_curMuz = currentMuzzle _caller;
-							if (count _muzzles > 1) then {
-								_type = (_muzzles select 0);
-							};
-							_caller selectWeapon _type;
-							if (_curMuz != _type) then {
-								sleep 0.2;
-							};
+					private "_type";
+					_type = primaryWeapon _caller;
+					if (_type != "") then {
+						private "_muzzles";
+						// check for multiple muzzles (eg: GL)
+						_muzzles = getArray(configFile >> "cfgWeapons" >> _type >> "muzzles");
+						_curMuz = currentMuzzle _caller;
+						if (count _muzzles > 1) then {
+							_type = (_muzzles select 0);
 						};
-						_caller playMove _pmars;
+						_caller selectWeapon _type;
+						if (_curMuz != _type) then {
+							sleep 0.2;
+						};
 					};
+					_caller playMove "AinvPknlMstpSnonWrflDnon_medic0";
 				};
-				if (_plC) then {
+				if (_plC && _localC) then {
 					_caller groupChat "Repack started...";
 				};
 				if (!isNil "_pmtrb") then {
@@ -280,17 +285,17 @@ if (!_haveSV) then {
 							breakTo "_nrMagsSN";
 						};
 					} forEach _amMags;
-					if (_plC) then {
+					if (_plC && _localC) then {
 						_caller groupChat format ["Repacking '%1'", _dispNm];
 					};
 					switch (_rptype) do {
 						case "NONROUNDWISE": {
 							if (_remain > 0) then {
 								private ["_mag", "_rem"];
-								_haveSV = ([ "pdth_mr_repack_cancelled", true, [_target, _caller]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars);
+								_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars) || (_plC && (!alive _caller));
 								if (_haveSV) then {
 									_cancel = true;
-									if (_plC) then {
+									if (_plC && _localC) then {
 										_caller groupChat "Repack cancelled.";
 									};
 									breakTo "roundwise";
@@ -325,7 +330,7 @@ if (!_haveSV) then {
 								if (!isNil "_pmtrc") then {
 									sleep _pmtrc;
 								};
-								if (_plC) then {
+								if (_plC && _localC) then {
 									_caller groupChat format ["Repacked '%1': %2 to %3 mags (%4 rounds)", _dispNm, _oldMags, _mag, _remain];
 								};
 							};
@@ -394,15 +399,15 @@ if (!_haveSV) then {
 												playSound3D [pdth_mr_sound_round_click_unload, _target, false, getPosASL _target, 2, 1.8, 10];
 											};
 
-											_haveSV = ([ "pdth_mr_repack_cancelled", true, [_target, _caller]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)
-												//|| (_plC && (((animationState _caller) find "medic") == -1))
+											_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)  || (_plC && (!alive _caller))
+												|| (_plC && (((animationState _caller) find "medic") == -1))
 												;
 											if (_haveSV) then {
 												_mCounts set [_iTake, [_clName, _haveToTake-_i-1]];
 												_cancel = true;
 												_gwh = "groundWeaponHolder" createVehicle position _target;
 												_gwh addMagazineAmmoCargo [_clName, 1, _i+1];
-												if (_plC) then {
+												if (_plC && _localC) then {
 													_caller groupChat format ["Repack cancelled, %1 rounds lost", _i+1];
 												};
 												breakTo "roundwise";
@@ -416,8 +421,8 @@ if (!_haveSV) then {
 												playSound3D [pdth_mr_sound_round_click, _target, false, getPosASL _target, 1.5, 1, 10];
 											};
 
-											_haveSV = ([ "pdth_mr_repack_cancelled", true, [_target, _caller]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)
-												//|| (_plC && (((animationState _caller) find "medic") == -1))
+											_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)  || (_plC && (!alive _caller))
+												|| (_plC && (((animationState _caller) find "medic") == -1))
 												;
 											if (_haveSV) then {
 												_mCounts set [_iPut, [_clName, _oldHave+_i+1]];
@@ -425,7 +430,7 @@ if (!_haveSV) then {
 												_cancel = true;
 												_gwh = "groundWeaponHolder" createVehicle position _target;
 												_gwh addMagazineAmmoCargo [_clName, 1, _canTake-(_i+1)];
-												if (_plC) then {
+												if (_plC && _localC) then {
 													_caller groupChat format ["Repack cancelled, %1 rounds lost", _canTake-(_i+1)];
 												};
 												breakTo "roundwise";
@@ -443,11 +448,11 @@ if (!_haveSV) then {
 									};
 								};
 								if (_haveToTake <= _leftToPut) then {
-									if (_plC) then {
+									if (_plC && _localC) then {
 										_caller groupChat format ["Repacked '%1': %2 + %3 -> %4 (1 empty mag discarded)", _dispNm, _oldHave, _haveToTake, _oldHave + _canTake];
 									};
 								} else {
-									if (_plC) then {
+									if (_plC && _localC) then {
 										_caller groupChat format ["Repacked '%1': %2 + %3 -> %4 + %5 (1 full mag repacked)", _dispNm, _oldHave, _haveToTake, _oldHave + _canTake, _haveToTake - _canTake];
 									};
 								};
@@ -457,21 +462,20 @@ if (!_haveSV) then {
 								if ((_haveToTake-_canTake) == 0) then {
 									_iTake = _iTake - 1;
 								};
-								//if (!(isNil "_pmars")) then {
-								//	if (_plC) then {
-								//		if (!( (animationState _caller) in () ))
-								//		_caller switchMove _pmars;
-								//	};
-								//};
+								if (_plC && _localC) then {
+									if (((animationState _caller) find "medic") == -1) then {
+										_caller switchMove "AinvPknlMstpSnonWrflDnon_medic0";
+									};
+								};
 								if (!isNil "_pmtrm") then {
 									sleep _pmtrm;
 								};
-								_haveSV = ([ "pdth_mr_repack_cancelled", true, [_target, _caller]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)
-									//|| (_plC && (((animationState _caller) find "medic") == -1))
+								_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)  || (_plC && (!alive _caller));
+									|| (_plC && (((animationState _caller) find "medic") == -1))
 									;
 								if (_haveSV) then {
 									_cancel = true;
-									if (_plC) then {
+									if (_plC && _localC) then {
 										_caller groupChat format ["Repack cancelled."];
 									};
 									breakTo "roundwise";
@@ -490,15 +494,13 @@ if (!_haveSV) then {
 						}; // case "ROUNDWISE"
 					};
 				} forEach _nrMags;
-				if (!(isNil "_pmare")) then {
-					if (_plC) then {
-						//if (((animationState _caller) find "medic") != -1) then {
-							_caller playMove _pmare;
-						//};
+				if (_plC && _localC) then {
+					if (((animationState _caller) find "medic") != -1) then {
+						_caller playMove "AinvPknlMstpSnonWrflDnon_medicEnd";
 					};
 				};
 				if (!(isNil "_curMuz")) then {
-					if (_plC) then {
+					if (_plC && _localC) then {
 						_caller selectWeapon _curMuz;
 					};
 				};
@@ -506,23 +508,23 @@ if (!_haveSV) then {
 		};
 		if (_cancel) then {
 			_var = _target call pdth_mr_has_repack;
-			_target setVariable ["pdth_mr_repack_show_action", _var, true];
+			_target setVariable ["pdth_mr_repack_show_action", _var, !_localT];
 		} else {
-			if (_plC) then {
+			if (_plC && _localC) then {
 				_caller groupChat "Repack finished.";
 			};
-			_target setVariable ["pdth_mr_repack_show_action", false, true];
+			_target setVariable ["pdth_mr_repack_show_action", false, !_localT];
 		};
-		_target setVariable ["pdth_mr_repack_runs", false, true];
+		_target setVariable ["pdth_mr_repack_runs", false, !_localT];
 		if (_target != _caller) then {
 			if (_nnC) then {
-				_caller setVariable ["pdth_mr_repack_runs", false, true];
+				_caller setVariable ["pdth_mr_repack_runs", false, !_localC];
 			};
 		};
-		_target setVariable ["pdth_mr_repack_cancelled", false, true];
+		_target setVariable ["pdth_mr_repack_cancelled", false, !_localT];
 		if (_target != _caller) then {
 			if (_nnC) then {
-				_caller setVariable ["pdth_mr_repack_cancelled", false, true];
+				_caller setVariable ["pdth_mr_repack_cancelled", false, !_localC];
 			};
 		};
 	};

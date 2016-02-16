@@ -1,7 +1,7 @@
-/*
-	AUTHOR: pedeathtrian
-	NAME: pdth/mr/has_repack.sqf
-	VERSION: 0.0.2
+/**
+	@file pdth/mr/has_repack.sqf
+	@author pedeathtrian
+	@version 0.0.3
 
 	DESCRIPTION:
 	This file is a part of pedeathtrian's magazine-repack "pdth/mr" bunch of scripts.
@@ -28,7 +28,7 @@
 	Beware that when used in addAction's `condition', special variables passed to the script code are _target (unit to which action is attached to) and _this (caller/executing unit),
 	but this script uses `_this' as target unit, so if you want to apply script to object other than caller, tehn actual `condition' most likely would be "_target call pdth_mr_has_repack"
 	See also: https://community.bistudio.com/wiki/addAction
-*/
+**/
 private ["_result", "_runs"];
 _result = false;
 if (!(isNull _this)) then {

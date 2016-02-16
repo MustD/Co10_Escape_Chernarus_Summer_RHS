@@ -1,7 +1,7 @@
 /*
 	AUTHOR: pedeathtrian
 	NAME: pdth/mr/repack_misc.sqf
-	VERSION: 0.0.2
+	VERSION: 0.0.3
 
 	DESCRIPTION:
 	This file is a part of pedeathtrian's magazine-repack "pdth/mr" bunch of scripts.
@@ -128,7 +128,7 @@ pdth_mr_deep_copy_w_replace = {
 };
 
 pdth_mr_check_stop_vars = {
-	// return true if some stop vars are valid on passed dobjects
+	// return true if some stop vars are valid on passed objects
 	// return false if repack can continue
 	// _this: _stopVars array, see description for do_repack.sqf
 	private "_result";
@@ -136,32 +136,49 @@ pdth_mr_check_stop_vars = {
 	scopeName "csvSN";
 	if (!(isNil "_this")) then {
 		if ((typeName _this) == "ARRAY") then {
-			{
+			{ // forEach _this;
 				if ((typeName _x) == "ARRAY") then {
 					private ["_varArr", "_name"];
 					_varArr = _x;
-					_name = _varArr select 0;
-					if (!(isNil "_name")) then {
-						if ((typeName _name) == "STRING") then {
-							private "_objs";
-							_objs = [_varArr, 2, [], [[]]] call BIS_fnc_param;
-							if ((count _objs) > 0) then {
-								private "_value";
-								_value = _varArr select 1; // can be nil, so checking for variable not being set
-								{
-									private "_objVar";
-									_objVar = _x getVariable [_name, nil];
-									if (isNil "_value") then {
-										if (isNil "_objVar") then {
-											_result = true;
-											breakTo "csvSN";
+					_name = [_varArr, 0, "", [""]] call BIS_fnc_param;
+					if (_name != "") then {
+						private "_objs";
+						_objs = [_varArr, 2, [], [[]]] call BIS_fnc_param;
+						if ((count _objs) > 0) then {
+							private "_values";
+							_values = [_varArr, 1, [], [[]]] call BIS_fnc_param;
+							if ((count _values) > 0) then {
+								{ // forEach _objs;
+									private ["_objVar", "_obj"];
+									_obj = _x;
+									switch (typeName _obj) do {
+										case "NAMESPACE";
+										case "OBJECT";
+										case "GROUP";
+										case "TEAM_MEMBER";
+										case "TASK";
+										case "LOCATION": {
+											private "_value";
+											{ // forEach _values;
+												_value = _x;
+												_objVar = _obj getVariable [_name, nil];
+												if (isNil "_value") then {
+													if (isNil "_objVar") then {
+														_result = true;
+														breakTo "csvSN";
+													};
+												} else {
+													if (!(isNil "_objVar")) then {
+														if (_value isEqualTo _objVar) then {
+															_result = true;
+															breakTo "csvSN";
+														};
+													};
+												};
+											} forEach _values;
 										};
-									} else {
-										if (!(isNil "_objVar")) then {
-											if (_value isEqualTo _objVar) then {
-												_result = true;
-												breakTo "csvSN";
-											};
+										default {
+											diag_log format ['WARNING: pdth_mr_check_stop_vars: Unsupported argument %1 ("%2") passed as left arg for getVariable. Might be error in passed arguments order and/or nestedness. File %3, line %4', _obj, typeName _obj, __FILE__, __LINE__];
 										};
 									};
 								} forEach _objs;
@@ -196,14 +213,12 @@ pdth_mr_check_repack_player = {
 	_caller = [_this, 1, objNull, [objNull]] call BIS_fnc_param;
 	// fastest conditions to check go first, other will be short-circuited
 	if ((!(isNull _target)) && (!(isNull _caller)) && (_caller == _target) && (vehicle _target == _target) && (!(captive _target))) then {
-		_runs = _target getVariable ["pdth_mr_repack_runs", false];
-		if (!_runs) then {
-			// deal with revive system
-			_isUnconscious = _caller getVariable ["AT_Revive_isUnconscious", false];
-			if (!_isUnconscious) then {
-				_result = _target getVariable ["pdth_mr_repack_show_action", false];
-			};
-		};
+		private "_checkVars";
+		_checkVars = [
+			["pdth_mr_repack_runs", [true], [_target]],
+			["pdth_mr_repack_show_action", [false, nil], [_target]]
+		] + ([pdth_mr_stop_vars, [["_caller", _caller]]] call pdth_mr_deep_copy_w_replace);
+		_result = ! (_checkVars call pdth_mr_check_stop_vars);
 	};
 	_result
 };
@@ -228,7 +243,11 @@ pdth_mr_check_cancel_repack = {
 	_caller = [_this, 1, objNull, [objNull]] call BIS_fnc_param;
 	// fastest conditions to check go first, other will be short-circuited
 	if ((!(isNull _target)) && (!(isNull _caller)) && (_caller == _target) && (vehicle _target == _target) && (!(captive _target))) then {
-		_result = _target getVariable ["pdth_mr_repack_runs", false] && (!(_caller getVariable ["AT_Revive_isUnconscious", false]));
+		private "_checkVars";
+		_checkVars = [
+			["pdth_mr_repack_runs", [false, nil], [_target]]
+		] + ([pdth_mr_stop_vars, [["_caller", _caller]]] call pdth_mr_deep_copy_w_replace);
+		_result = ! (_checkVars call pdth_mr_check_stop_vars);
 	};
 	_result
 };
@@ -238,7 +257,7 @@ pdth_mr_var_updater = {
 	_target = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
 	if (!(isNull _target)) then {
 		_var = _target call pdth_mr_has_repack;
-		_target setVariable ["pdth_mr_repack_show_action", _var, true];
+		_target setVariable ["pdth_mr_repack_show_action", _var, !(local _target)];
 	};
 };
 
@@ -261,8 +280,7 @@ pdth_mr_respawn_handler ={
 			[ // See pdth_mr_do_repack parameters description
 				"ROUNDWISE",
 				pdth_mr_stop_vars,
-				[pdth_mr_time_repack_base, pdth_mr_time_repack_rw_round, pdth_mr_time_repack_rw_round_unload, pdth_mr_time_repack_rw_mag],
-				[pdth_mr_anim_repack_start, pdth_mr_anim_repack_end]
+				[pdth_mr_time_repack_base, pdth_mr_time_repack_rw_round, pdth_mr_time_repack_rw_round_unload, pdth_mr_time_repack_rw_mag]
 			],
 			1.5, false, true, "",
 			"[_target, _this] call pdth_mr_check_repack_player"
@@ -271,7 +289,7 @@ pdth_mr_respawn_handler ={
 
 		_idAction = _new addAction [
 			"<t color='#FF6644'>Cancel repack</t>",
-			{_target setVariable ["pdth_mr_repack_cancelled", true]},
+			{(_this select 0) setVariable ["pdth_mr_repack_cancelled", true, !(local (_this select 0))]},
 			[], 1.5, false, true, "",
 			"[_target, _this] call pdth_mr_check_cancel_repack"
 		];

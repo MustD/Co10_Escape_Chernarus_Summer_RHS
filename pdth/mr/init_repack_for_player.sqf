@@ -1,7 +1,7 @@
 /*
 	AUTHOR: pedeathtrian
 	NAME: pdth/mr/init_repack_for_player.sqf
-	VERSION: 0.0.2
+	VERSION: 0.0.3
 
 	DESCRIPTION:
 	This file is a part of pedeathtrian's magazine-repack "pdth/mr" bunch of scripts.
@@ -21,9 +21,6 @@ pdth_mr_time_repack_rw_round = 1; // delay per ammo round loaded, applied when r
 pdth_mr_time_repack_rw_round_unload = 0.4; // delay per ammo round unloaded, applied when round removed from other mag for repacking
 pdth_mr_time_repack_rw_mag = 2; // delay per magazine used for repack, applied when mag filled or emptied
 pdth_mr_allow_cancel_repack_rw = true; // if true there will be action to stop roundwise repack procedure, saving what is already done (for emergency situations)
-// animations for start and end of repack (used with playMove)
-pdth_mr_anim_repack_start = "AinvPknlMstpSnonWrflDnon_medic0";
-pdth_mr_anim_repack_end = "AinvPknlMstpSnonWrflDnon_medicEnd";
 // play this sound every repacked round (unloading and loading)
 // played with volume 1.2 and pitch 1.8, so sounds differently from next even if the same name
 pdth_mr_sound_round_click_unload = "A3\Sounds_F\arsenal\weapons\Pistols\Acpc2\dry_Acpc2.wss";
@@ -67,7 +64,7 @@ pdth_mr_chained_mags_excl = [
 ];
 pdth_mr_chained_mags = pdth_mr_chained_mags_add;
 // 3rd-party variables that should stop repacking, see description of _stopVars in pdth\mr\do_repack.sqf
-pdth_mr_stop_vars = ["AT_Revive_isUnconscious", true, ["_caller"]];
+pdth_mr_stop_vars = [["AT_Revive_isUnconscious", [true], ["_caller"]]];
 // END CONFIG SECTION
 
 [] spawn {
