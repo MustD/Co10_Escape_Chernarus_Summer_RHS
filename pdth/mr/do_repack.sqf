@@ -470,7 +470,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 								if (!isNil "_pmtrm") then {
 									sleep _pmtrm;
 								};
-								_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)  || (_plC && (!alive _caller));
+								_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)  || (_plC && (!alive _caller))
 									|| (_plC && (((animationState _caller) find "medic") == -1))
 									;
 								if (_haveSV) then {
