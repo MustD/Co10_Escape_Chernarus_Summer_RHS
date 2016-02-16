@@ -736,7 +736,7 @@ PDTH_FNC_CopyTypedCargo = {
 };
 
 AT_FNC_CopyGear = {
-	private["_u1","_u2", "_d1", "_d2","_weapons","_assigned_items","_primary","_wName","_i","_blacklist","_keep_ammocount"];
+	private["_u1","_u2", "_d1", "_d2","_weapons","_assigned_items","_primary", "_secondary", "_handgun", "_addedP", "_addedS", "_addedH","_wName","_i","_keep_ammocount", "_iCount"];
 
 	_u1 = [_this,0,objnull,[objnull]] call bis_fnc_param;
 	_u2 = [_this,1,objnull,[objnull]] call bis_fnc_param;
@@ -751,7 +751,12 @@ AT_FNC_CopyGear = {
 		["Missing second parameter for gear copy!"] call BIS_fnc_error;
 	};
 	_primary = primaryWeapon _u2;
+	_secondary = secondaryWeapon _u2;
+	_handgun = handgunWeapon _u2;
 	_weapons = weaponsItems _u2;
+	_addedP = (_primary == "");
+	_addedS = (_secondary == "");
+	_addedH = (_handgun == "");
 
 	removeAllAssignedItems _u1;
 	removeAllContainers _u1;
@@ -778,28 +783,59 @@ AT_FNC_CopyGear = {
 
 	{
 		_u1 linkItem _x;
-	} foreach assignedItems _u2;
+	} foreach (assignedItems _u2);
 
-	_blacklist = ["Rangefinder","Binocular"];
-	{
-		if ((count _x > 0) && (_x select 0)!="" && !((_x select 0) in _blacklist)) then {
-			_wName = _x select 0;
-			_u1 addweapon _wName;
-			for [{_i=1}, {_i < count _x}, {_i=_i+1}] do
-			{
-				// since ArmA 3 v1.38
-				// works even if (_x select _i) is array, e.g. ["30Rnd_65x39_caseless_mag", 29];
-				// muzzle is autodetected for sub-barrel grenade launchers
-				_u1 addWeaponItem [_wName, _x select _i];
+	scopeName "_AT_FNC_CopyGear";
+	if (!(_addedS && _addedP && _addedH)) then {
+		{ // foreach _weapons;
+			_wName = (_x select 0);
+			_iCount = count _x;
+			switch _wName do {
+				case _primary: {
+					if (!_addedP) then {
+						_u1 addWeapon _primary;
+						for [{_i=1}, {_i < _iCount}, {_i=_i+1}] do {
+							_u1 addWeaponItem [_wName, _x select _i];
+						};
+						_addedP = true;
+						if (_addedH && _addedS) then {
+							breakTo "_AT_FNC_CopyGear";
+						};
+					};
+				};
+				case _secondary: {
+					if (!_addedS) then {
+						_u1 addWeapon _secondary;
+						for [{_i=1}, {_i < _iCount}, {_i=_i+1}] do {
+							_u1 addWeaponItem [_wName, _x select _i];
+						};
+						_addedS = true;
+						if (_addedH && _addedP) then {
+							breakTo "_AT_FNC_CopyGear";
+						};
+					};
+				};
+				case _handgun: {
+					if (!_addedH) then {
+						_u1 addWeapon _handgun;
+						for [{_i=1}, {_i < _iCount}, {_i=_i+1}] do {
+							_u1 addWeaponItem [_wName, _x select _i];
+						};
+						_addedH = true;
+						if (_addedS && _addedP) then {
+							breakTo "_AT_FNC_CopyGear";
+						};
+					};
+				};
 			};
-		};
-	} foreach (weaponsItems _u2);
+		} foreach _weapons;
+	};
 
 	[uniformContainer _u1, uniformContainer _u2, 7, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
 	[vestContainer _u1, vestContainer _u2, 7, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
 	[backpackContainer _u1, backpackContainer _u2, 7, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
 
-	_u1 selectWeapon (currentWeapon _u2);
+	_u1 selectWeapon (currentMuzzle _u2);
 	//_zeroing = currentZeroing _u2;
 	//weaponState player;
 
