@@ -270,7 +270,9 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 					_caller groupChat "Repack started...";
 				};
 				if (!isNil "_pmtrb") then {
-					sleep _pmtrb;
+					if (_pmtrb > 0) then {
+						sleep _pmtrb*(0.9+random(0.2));
+					};
 				};
 				{ //forEach _nrMags;
 					scopeName "_nrMagsSN";
@@ -304,9 +306,16 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 								_rem = _remain % _fullMagCount;
 								// there's no easy way to remove special type of magazines from unit or cargo space
 								// (for units removeMagazines can create invalid combinations, see https://community.bistudio.com/wiki/removeMagazines)
+								// but global variant is damn long to wait.
 								if (_isManT) then {
-									while {_clName in (magazines _target)} do {
-										_target removeMagazineGlobal _clName; // does not remove loaded: ok
+									if (_localT) then {
+										_target removeMagazines _clName;
+										waitUntil {!(_clName in (magazines _target))};
+									} else {
+										// this is incredibly laggy and slow =(
+										while {_clName in (magazines _target)} do {
+											_target removeMagazineGlobal _clName; // does not remove loaded: ok
+										};
 									};
 									_target addMagazines [_clName, _mag];
 									if (_rem > 0) then {
@@ -328,7 +337,9 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 									_mag = _mag + 1;
 								};
 								if (!isNil "_pmtrc") then {
-									sleep _pmtrc;
+									if (_pmtrc > 0) then {
+										sleep _pmtrc*(0.9+random(0.2));
+									};
 								};
 								if (_plC && _localC) then {
 									_caller groupChat format ["Repacked '%1': %2 to %3 mags (%4 rounds)", _dispNm, _oldMags, _mag, _remain];
@@ -347,8 +358,14 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 							};
 							_iPut = 0;
 							if (_isManT) then {
-								while {_clName in (magazines _target)} do {
-									_target removeMagazineGlobal _clName; // does not remove loaded: ok
+								if (_localT) then {
+									_target removeMagazines _clName;
+									waitUntil {!(_clName in (magazines _target))};
+								} else {
+									// this is incredibly laggy and slow =(
+									while {_clName in (magazines _target)} do {
+										_target removeMagazineGlobal _clName; // does not remove loaded: ok
+									};
 								};
 								if ((_oldMags - (_iTake+1)) > 0) then {
 									_target addMagazines [_clName, _oldMags - (_iTake+1)];
@@ -377,26 +394,32 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 								if (_clName in pdth_mr_chained_mags) then {
 									/// chains are treated specially: you don't need to remove all ammo from one chain to put them to another
 									if (!isNil "pdth_mr_sound_chainwork") then {
-										playSound3D [pdth_mr_sound_chainwork, _target, false, getPosASL _target, 2, 1, 10];
+										playSound3D [pdth_mr_sound_chainwork, _target, false, getPosASL _target, 1.76+random(1.25), 0.8+random(0.4), 10];
 									};
 									if (!isNil "_pmtrm") then {
-										sleep _pmtrm;
+										if (_pmtrm > 0) then {
+											sleep _pmtrm*(0.9+random(0.2));
+										};
 									};
 									if (_haveToTake > _leftToPut) then {
 										// if we have longer second chain, than we can connect to first chain, then addition chain cut required
 										if (!isNil "pdth_mr_sound_chainwork") then {
-											playSound3D [pdth_mr_sound_chainwork, _target, false, getPosASL _target, 2, 1, 10];
+											playSound3D [pdth_mr_sound_chainwork, _target, false, getPosASL _target, 1.76+random(1.25), 0.8+random(0.4), 10];
 										};
 										if (!isNil "_pmtrm") then {
-											sleep _pmtrm;
+											if (_pmtrm > 0) then {
+												sleep _pmtrm*(0.9+random(0.2));
+											};
 										};
 									};
 								} else {
 									if (!isNil "_pmtrru") then {
 										for [{_i=0}, {_i < _canTake}, {_i = _i + 1}] do {
-											sleep _pmtrru;
+											if (_pmtrru > 0) then {
+												sleep _pmtrru*(0.9+random(0.2));
+											};
 											if (!isNil "pdth_mr_sound_round_click_unload") then {
-												playSound3D [pdth_mr_sound_round_click_unload, _target, false, getPosASL _target, 2, 1.8, 10];
+												playSound3D [pdth_mr_sound_round_click_unload, _target, false, getPosASL _target, 1.76+random(1.25), 1.4+random(0.4), 10];
 											};
 
 											_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)  || (_plC && (!alive _caller))
@@ -416,9 +439,11 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 									};
 									if (!isNil "_pmtrr") then {
 										for [{_i=0}, {_i < _canTake}, {_i = _i + 1}] do {
-											sleep _pmtrr;
+											if (_pmtrr > 0) then {
+												sleep _pmtrr*(0.9+random(0.2));
+											};
 											if (!isNil "pdth_mr_sound_round_click") then {
-												playSound3D [pdth_mr_sound_round_click, _target, false, getPosASL _target, 1.5, 1, 10];
+												playSound3D [pdth_mr_sound_round_click, _target, false, getPosASL _target, 3.1, 1, 10];
 											};
 
 											_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)  || (_plC && (!alive _caller))
@@ -468,7 +493,9 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 									};
 								};
 								if (!isNil "_pmtrm") then {
-									sleep _pmtrm;
+									if (_pmtrm > 0) then {
+										sleep _pmtrm*(0.9+random(0.2));
+									};
 								};
 								_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)  || (_plC && (!alive _caller))
 									|| (_plC && (((animationState _caller) find "medic") == -1))

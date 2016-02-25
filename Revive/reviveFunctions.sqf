@@ -48,7 +48,7 @@ AT_FNC_Revive_InitPlayer = {
 				};
 			};
 		} else {
-			removeallweapons player;
+			removeAllWeapons player;
 			removeAllItems player;
 			removeBackpack player;
 
@@ -121,14 +121,8 @@ AT_FNC_Revive_Hide = {
 	private["_unit","_hide"];
 	_unit = _this select 0;
 	_hide = _this select 1;
-
-	if(_hide) then {
-		//_unit enableSimulation false;
-		_unit hideobject true;
-	} else {
-		//_unit enableSimulation true;
-		_unit hideobject false;
-	};
+	//_unit enableSimulation !_hide;
+	_unit hideObject _hide;
 };
 AT_FNC_Revive_Playmove = {
 	private["_unit","_anim"];
@@ -190,11 +184,59 @@ AT_FNC_Revive_Unconscious =
 		};
 	};
 
+	// deal with dropping weapon on respawn
+	private ["_prim", "_sec", "_hand", "_weapItems", "_pSet", "_sSet", "_hSet"];
+	_prim = primaryWeapon _unit;
+	_sec = secondaryWeapon _unit;
+	_hand = handgunWeapon _unit;
+	_pSet = (_prim == "");
+	_sSet = (_sec == "");
+	_hSet = (_hand == "");
+	_weapItems = weaponsItems _unit;
+	scopeName "_AT_FNC_Revive_Unconscious";
+	if (!(_pSet && _sSet && _hSet)) then {
+		{
+			if ((!_pSet) && (_prim == (_x select 0))) then {
+				_unit setVariable ["AT_Revive_primaryWeapon", _x];
+				_pSet = true;
+				if (_sSet && _hSet) then {
+					breakTo "_AT_FNC_Revive_Unconscious";
+				};
+			};
+			if ((!_sSet) && (_sec == (_x select 0))) then {
+				_unit setVariable ["AT_Revive_secondaryWeapon", _x];
+				_sSet = true;
+				if (_pSet && _hSet) then {
+					breakTo "_AT_FNC_Revive_Unconscious";
+				};
+			};
+			if ((!_hSet) && (_hand == (_x select 0))) then {
+				_unit setVariable ["AT_Revive_handgunWeapon", _x];
+				_hSet = true;
+				if (_pSet && _sSet) then {
+					breakTo "_AT_FNC_Revive_Unconscious";
+				};
+			};
+		} forEach _weapItems;
+	};
+	_weapItems = nil;
+
+	// revealing after revive
+	private "_knowledge";
+	_knowledge = 1;
+	if (!(isNil "_killer")) then {
+		if (!(isNull _killer)) then {
+			if (alive _killer) then {
+				_knowledge = _killer knowsAbout _unit;
+			};
+		};
+	};
+
 	_unit setDamage 0.9;
-    _unit setVelocity [0,0,0];
-    _unit allowDammage false;
+	_unit setVelocity [0,0,0];
+	_unit allowDammage false;
 	_unit setCaptive true;
-	if(surfaceIsWater getpos _unit && ((getPosASL _unit) select 2)>2 && (vehicle _unit != _unit)) then {
+	if(surfaceIsWater getPos _unit && ((getPosASL _unit) select 2)>2 && (vehicle _unit != _unit)) then {
 		[_unit] call AT_FNC_Revive_WashAshore;
 	};
 
@@ -203,7 +245,7 @@ AT_FNC_Revive_Unconscious =
 	};
 	sleep 0.5;
 
-    if(vehicle _unit == _unit) then {
+	if(vehicle _unit == _unit) then {
 		[[_unit,"AinjPpneMstpSnonWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
 	};
 	_unit enableSimulation false;
@@ -238,20 +280,26 @@ AT_FNC_Revive_Unconscious =
 		// Player got revived
 		//sleep 6;
 
-
 		_unit enableSimulation true;
 		_unit allowDamage true;
 		_unit setCaptive false;
 
+		// revealing
+		if (!(isNil "_killer")) then {
+			if (!(isNull _killer)) then {
+				if (alive _killer) then {
+					_killer reveal [_unit, _knowledge];
+				};
+			};
+		};
+
 		sleep 0.5;
 		_unit setPosATL _pos; //Fix the stuck in the ground bug
-
 	};
 };
 
 AT_FNC_Revive_SwitchVehicleDeadAnimation = {
 	private["_interpolates"];
-	// _unit = param[0]; // requires A3 v1.48
 	_unit = [_this, 0] call BIS_fnc_param;
 	if(vehicle _unit != _unit) then {
 		_interpolates = [(configfile >> "CfgMovesMaleSdr" >> "States" >> animationState _unit),"interpolateTo",""] call BIS_fnc_returnConfigEntry;
@@ -268,9 +316,7 @@ AT_FNC_Revive_SwitchVehicleDeadAnimation = {
 
 AT_FNC_Revive_WatchVehicle = {
 	private["_hnd"];
-	//_vehicle = param[0]; // requires A3 v1.48
 	_vehicle = [_this, 0] call BIS_fnc_param;
-	//_unit = param[2]; // requires A3 v1.48
 	_unit = [_this, 2] call BIS_fnc_param;
 	if(local _unit && (_unit getVariable ["AT_Revive_isUnconscious",false])) then {
 		_hnd = [_unit] spawn at_fnc_revive_ragdoll;
@@ -283,9 +329,7 @@ AT_FNC_Revive_WatchVehicle = {
 AT_FNC_Revive_HandleRevive =
 {
 	private["_attendant"];
-	//_target = param [0,objNull]; // requires A3 v1.48
 	_target = [_this, 0, objNull] call BIS_fnc_param;
-	//_fakUsed = param [1,false]; // requires A3 v1.48
 	_fakUsed = [_this, 1, false] call BIS_fnc_param;
 
 	if (alive _target) then
@@ -397,7 +441,6 @@ AT_FNC_Revive_Release =
 
 };
 AT_FNC_Revive_AddVehicleWatchdog = {
-	//_vehicle = param[0]; // requires A3 v1.48
 	_vehicle = [_this, 0] call BIS_fnc_param;
 	_EH = _vehicle getvariable ["AT_Revive_VehicleWatchdog",-1];
 	if(_EH>=0) then {
@@ -511,9 +554,7 @@ AT_FNC_Revive_PutInVehicle = {
 	};
 };
 AT_FNC_Revive_MoveInjuredInVehicle = {
-	//_injured = param[0]; // requires A3 v1.48
 	_injured = [_this, 0] call BIS_fnc_param;
-	//_vehicle = param[1]; // requires A3 v1.48
 	_vehicle = [_this, 1] call BIS_fnc_param;
 	_injured moveInCargo _vehicle;
 };
@@ -532,12 +573,12 @@ AT_FNC_Revive_Ragdoll = {
 	_unit = _this select 0;
 
 	if(((eyepos _unit) select 2)>0.4) then {
-		_group = creategroup (side _unit);
+		_group = createGroup (side _unit);
 		[[_unit,true],"at_fnc_revive_hide",true] call BIS_fnc_MP;
 		_dummy = _group createUnit [typeof _unit, [0,0,0], [], 0, "FORM"];
 		if(!isNull _dummy) then {
-			_dummy setposASL getPosASL _unit;
-			_dummy setdir getdir _unit;
+			_dummy setPosASL getPosASL _unit;
+			_dummy setDir getDir _unit;
 			_dummy setVelocity velocity _unit;
 			_state = animationState _unit;
 			if (!(_unit in AT_Revive_HoldFromDelete)) then {
@@ -546,7 +587,7 @@ AT_FNC_Revive_Ragdoll = {
 			AT_Revive_HoldFromDelete pushBack _dummy;
 			[_dummy,_unit, true, true, false] spawn at_fnc_copyGear;
 			[[_dummy,_state],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
-			_dummy setdammage 1;
+			_dummy setDamage 1;
 			if(_unit==player) then {
 				_dummy switchCamera "Internal";
 			};
@@ -561,9 +602,11 @@ AT_FNC_Revive_Ragdoll = {
 			[[_unit,false],"at_fnc_revive_hide",true] call BIS_fnc_MP;
 			[[_unit,"AinjPpneMstpSnonWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
 			player switchCamera "Internal";
-			_dummy setpos [0,0,0];
-			waitUntil {(!(_dummy in AT_Revive_HoldFromDelete))};
-			deletevehicle _dummy;
+			_dummy setPos [0,0,0];
+			_dummy spawn {
+				waitUntil {!(_this in AT_Revive_HoldFromDelete)};
+				deleteVehicle _this;
+			};
 		} else {
 			[[_unit,"AinjPpneMstpSnonWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
 		};
@@ -736,18 +779,18 @@ PDTH_FNC_CopyTypedCargo = {
 };
 
 AT_FNC_CopyGear = {
-	private["_u1","_u2", "_d1", "_d2","_weapons","_assigned_items","_primary", "_secondary", "_handgun", "_addedP", "_addedS", "_addedH","_wName","_i","_keep_ammocount", "_iCount"];
+	private["_u1","_u2", "_d1", "_d2","_weapons","_assigned_items","_primary", "_secondary", "_handgun", "_addedP", "_addedS", "_addedH","_wName","_i","_keep_ammocount", "_iCount", "_var", "_storedWeaps"];
 
-	_u1 = [_this,0,objnull,[objnull]] call bis_fnc_param;
-	_u2 = [_this,1,objnull,[objnull]] call bis_fnc_param;
+	_u1 = [_this,0,objNull,[objNull]] call bis_fnc_param;
+	_u2 = [_this,1,objNull,[objNull]] call bis_fnc_param;
 	_keep_ammocount = [_this,2,false,[true]] call bis_fnc_param;
 	_d1 = [_this,3,true,[true]] call bis_fnc_param;
 	_d2 = [_this,4,true,[true]] call bis_fnc_param;
 
-	if (isnull _u1) exitwith {
+	if (isNull _u1) exitwith {
 		["Missing first parameter for gear copy!"] call BIS_fnc_error;
 	};
-	if (isnull _u2) exitwith {
+	if (isNull _u2) exitwith {
 		["Missing second parameter for gear copy!"] call BIS_fnc_error;
 	};
 	_primary = primaryWeapon _u2;
@@ -757,6 +800,38 @@ AT_FNC_CopyGear = {
 	_addedP = (_primary == "");
 	_addedS = (_secondary == "");
 	_addedH = (_handgun == "");
+	_storedWeaps = [];
+	if (_addedP) then {
+		_var = _u2 getVariable "AT_Revive_primaryWeapon";
+		if (!(isNil "_var")) then {
+			_storedWeaps pushBack _var;
+			_primary = _var select 0;
+			_addedP = false;
+		};
+		_var = nil;
+	};
+	if (_addedS) then {
+		_var = _u2 getVariable "AT_Revive_secondaryWeapon";
+		if (!(isNil "_var")) then {
+			_storedWeaps pushBack _var;
+			_secondary = _var select 0;
+			_addedS = false;
+		};
+		_var = nil;
+	};
+	if (_addedH) then {
+		_var = _u2 getVariable "AT_Revive_handgunWeapon";
+		if (!(isNil "_var")) then {
+			_storedWeaps pushBack _var;
+			_handgun = _var select 0;
+			_addedH = false;
+		};
+		_var = nil;
+	};
+	if ((count _storedWeaps) > 0) then {
+		_weapons = _storedWeaps + _weapons;
+	};
+	_storedWeaps = nil;
 
 	removeAllAssignedItems _u1;
 	removeAllContainers _u1;
@@ -771,31 +846,59 @@ AT_FNC_CopyGear = {
 		_u1 addGoggles (goggles _u2);
 	};
 	if((uniform _u2)!="") then {
-		_u1 adduniform(uniform _u2);
+		_u1 addUniform(uniform _u2);
 	};
 	if((vest _u2)!="") then {
-		_u1 addvest (vest _u2);
+		_u1 addVest (vest _u2);
 	};
 	if((backpack _u2)!="") then {
-		_u1 addbackpack (backpack _u2);
-		clearAllItemsFromBackpack _u1; // some backpacks spawned with some items already contained
+		// some backpacks spawned with some items already contained
+		_u1 addBackpack ((backpack _u2) call BIS_fnc_basicBackpack);
 	};
 
 	{
 		_u1 linkItem _x;
 	} foreach (assignedItems _u2);
 
+	// adding weapons stored in uniform, vest and backpack containers
+	{
+		private ["_dstCont", "_srcCont", "_weapList"];
+		_dstCont = [_x, 0, objNull, [objNull]] call BIS_fnc_param;
+		_srcCont = [_x, 1, objNull, [objNull]] call BIS_fnc_param;
+		if (!(isNull _dstCont || isNull _srcCont)) then {
+			_weapList = weaponsItemsCargo _srcCont;
+			{
+				private ["_weap", "_itms"];
+				_itms = _x;
+				_weap = [_itms select 0] call BIS_fnc_baseWeapon;
+				_u1 addWeapon _weap;
+				for [{_i=1}, {_i < (count _itms)}, {_i=_i+1}] do {
+					_u1 addWeaponItem [_weap, _itms select _i];
+				};
+				_u1 action ["DropWeapon", _dstCont, _weap];
+				waitUntil {((primaryWeapon _u1) == "") && ((secondaryWeapon _u1) == "") && ((handgunWeapon _u1) == "")};
+			} forEach _weapList;
+		};
+	} forEach [
+		[uniformContainer _u1, uniformContainer _u2],
+		[vestContainer _u1, vestContainer _u2],
+		[backpackContainer _u1, backpackContainer _u2]
+	];
+
 	scopeName "_AT_FNC_CopyGear";
 	if (!(_addedS && _addedP && _addedH)) then {
 		{ // foreach _weapons;
-			_wName = (_x select 0);
-			_iCount = count _x;
+			private ["_itms", "_baseWeap"];
+			_itms = _x;
+			_wName = (_itms select 0);
+			_baseWeap = [_wName] call BIS_fnc_baseWeapon;
+			_iCount = count _itms;
 			switch _wName do {
 				case _primary: {
 					if (!_addedP) then {
-						_u1 addWeapon _primary;
+						_u1 addWeapon _baseWeap;
 						for [{_i=1}, {_i < _iCount}, {_i=_i+1}] do {
-							_u1 addWeaponItem [_wName, _x select _i];
+							_u1 addWeaponItem [_baseWeap, _itms select _i];
 						};
 						_addedP = true;
 						if (_addedH && _addedS) then {
@@ -805,9 +908,9 @@ AT_FNC_CopyGear = {
 				};
 				case _secondary: {
 					if (!_addedS) then {
-						_u1 addWeapon _secondary;
+						_u1 addWeapon _baseWeap;
 						for [{_i=1}, {_i < _iCount}, {_i=_i+1}] do {
-							_u1 addWeaponItem [_wName, _x select _i];
+							_u1 addWeaponItem [_baseWeap, _itms select _i];
 						};
 						_addedS = true;
 						if (_addedH && _addedP) then {
@@ -817,9 +920,9 @@ AT_FNC_CopyGear = {
 				};
 				case _handgun: {
 					if (!_addedH) then {
-						_u1 addWeapon _handgun;
+						_u1 addWeapon _baseWeap;
 						for [{_i=1}, {_i < _iCount}, {_i=_i+1}] do {
-							_u1 addWeaponItem [_wName, _x select _i];
+							_u1 addWeaponItem [_baseWeap, _itms select _i];
 						};
 						_addedH = true;
 						if (_addedS && _addedP) then {
@@ -831,11 +934,15 @@ AT_FNC_CopyGear = {
 		} foreach _weapons;
 	};
 
-	[uniformContainer _u1, uniformContainer _u2, 7, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
-	[vestContainer _u1, vestContainer _u2, 7, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
-	[backpackContainer _u1, backpackContainer _u2, 7, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
+	[uniformContainer _u1, uniformContainer _u2, 3, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
+	[vestContainer _u1, vestContainer _u2, 3, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
+	[backpackContainer _u1, backpackContainer _u2, 3, _keep_ammocount] call PDTH_FNC_CopyTypedCargo;
 
-	_u1 selectWeapon (currentMuzzle _u2);
+	private "_curMuz";
+	_curMuz = currentMuzzle _u2;
+	if ((typeName _curMuz) == "STRING") then {
+		_u1 selectWeapon _curMuz;
+	};
 	//_zeroing = currentZeroing _u2;
 	//weaponState player;
 
@@ -848,7 +955,6 @@ AT_FNC_CopyGear = {
 };
 
 //AT_FNC_Revive_WashAshore = {
-//	//_player = param[0,objNull]; // requires A3 v1.48
 //	_player = [_this, 0, objNull] call BIS_fnc_param;
 //	_center = SouthWest vectorAdd (NorthEast vectordiff SouthWest);
 //	_radius = 10;
@@ -872,7 +978,6 @@ AT_FNC_CopyGear = {
 AT_FNC_Revive_WashAshore = {
 	private["_unit","_center","_pos","_distance","_vec","_found","_npos"];
 
-	//_unit = param[0]; // requires A3 v1.48
 	_unit = [_this, 0] call BIS_fnc_param;
 
 	_center = (position SouthWest) vectorAdd ((position NorthEast) vectordiff (position SouthWest));

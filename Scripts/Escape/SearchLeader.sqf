@@ -142,13 +142,17 @@ while {1 == 1} do {
 		// Check if detected by civilian
 		if (a3e_var_Escape_SearchLeader_civilianReporting && !_unitIsDetected) then {
 			//We need to check if civilian knows about player atm this is cheating for AI
-			_unitIsDetected = true;
-			_detectedUnit = (call A3E_fnc_GetPlayers) select 0;
-			_unitThatDetected = a3e_var_Escape_SearchLeader_ReportingCivilian;
-			_reportingUnit = _unitThatDetected;
-			_unitThatDetectedPositionAccuracy = 0;
-			_maxKnowledge = 4;
-			_detectedUnitsPosition = getPos _detectedUnit;
+			private ["_players"];
+			_players = call A3E_fnc_GetPlayers;
+			if ((count _players) > 0) then {
+				_unitIsDetected = true;
+				_detectedUnit = _players select 0;
+				_unitThatDetected = a3e_var_Escape_SearchLeader_ReportingCivilian;
+				_reportingUnit = _unitThatDetected;
+				_unitThatDetectedPositionAccuracy = 0;
+				_maxKnowledge = 4;
+				_detectedUnitsPosition = getPos _detectedUnit;
+			};
 		};
 
 		if (_unitIsDetected) then {

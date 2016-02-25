@@ -17,17 +17,10 @@ private ["_subAreaSearchTimeSec", "_subAreaSize", "_defaultSearchAreaMarkerName"
 private ["_subSearchAreaMarker", "_currentEntityNo", "_subSearchAreaMarkerName"];
 private ["_debugGroupMarkerName", "_debugDestinationMarkerName", "_debugSubAreaMarkerName"];
 
-//if (requiredVersion "1.48") then {
-//	_group = param [0,grpNull];
-//	_searchAreaMarkerName = param [1,grpNull];
-//	_firstPos = param [2,[0,0,0]];
-//	_debug = param [3,false];
-//} else {
-	_group = [_this, 0, grpNull] call BIS_fnc_param;
-	_searchAreaMarkerName = [_this, 1, grpNull] call BIS_fnc_param;
-	_firstPos = [_this, 2, [0,0,0]] call BIS_fnc_param;
-	_debug = [_this, 3, false] call BIS_fnc_param;
-//};
+_group = [_this, 0, grpNull] call BIS_fnc_param;
+_searchAreaMarkerName = [_this, 1, grpNull] call BIS_fnc_param;
+_firstPos = [_this, 2, [0,0,0]] call BIS_fnc_param;
+_debug = [_this, 3, false] call BIS_fnc_param;
 
 _subAreaSearchTimeSec = 180; // How long time the search group will search the area where enemy was last seen
 _subAreaSize = 100; // Size (width and height) of the sub area
@@ -59,7 +52,7 @@ if (_firstPos select 0 == 0 and _firstPos select 1 == 0) then {
 };
 
 if (_debug) then {
-    ["Search group " + str _currentEntityNo + " on its way!"] call drn_fnc_CL_ShowDebugTextAllClients;
+	["Search group " + str _currentEntityNo + " on its way!"] call drn_fnc_CL_ShowDebugTextAllClients;
 };
 
 // Wait until search area exists
@@ -69,17 +62,17 @@ while {!([_searchAreaMarkerName] call drn_fnc_CL_MarkerExists)} do {
 };
 
 if (_debug) then {
-    [_group, _debugGroupMarkerName, _currentEntityNo] spawn {
-        private ["_group", "_debugGroupMarkerName", "_currentEntityNo"];
-        _group = _this select 0;
-        _debugGroupMarkerName = _this select 1;
-        _currentEntityNo = _this select 2;
+	[_group, _debugGroupMarkerName, _currentEntityNo] spawn {
+		private ["_group", "_debugGroupMarkerName", "_currentEntityNo"];
+		_group = _this select 0;
+		_debugGroupMarkerName = _this select 1;
+		_currentEntityNo = _this select 2;
 
-        while {!(isnull leader _group)} do {
-            [_debugGroupMarkerName, getPos (leader _group), "mil_dot", "ColorRed", "SG" + str _currentEntityNo] call drn_fnc_CL_SetDebugMarkerAllClients;
-            sleep 1;
-        };
-    };
+		while {!(isnull leader _group)} do {
+			[_debugGroupMarkerName, getPos (leader _group), "mil_dot", "ColorRed", "SG" + str _currentEntityNo] call drn_fnc_CL_SetDebugMarkerAllClients;
+			sleep 1;
+		};
+	};
 };
 
 scopeName "mainScope";
@@ -88,218 +81,214 @@ scopeName "mainScope";
 
 _exitScript = false;
 while {!_exitScript} do {
-    scopeName "mainScope";
+	scopeName "mainScope";
 
-    if (_debug) then {
-        ["Search group moving to new position..."] call drn_fnc_CL_ShowDebugTextAllClients;
-    };
+	if (_debug) then {
+		["Search group moving to new position..."] call drn_fnc_CL_ShowDebugTextAllClients;
+	};
 
-    if (_state == "TRANSPORTING") then {
-        if (_moveToFirstPos) then {
-            _position = + _firstPos;
-            _moveToFirstPos = false;
-        }
-        else {
-            _position = [_searchAreaMarkerName] call drn_fnc_CL_GetRandomMarkerPos;
-        };
+	if (_state == "TRANSPORTING") then {
+		if (_moveToFirstPos) then {
+			_position = + _firstPos;
+			_moveToFirstPos = false;
+		} else {
+		_position = [_searchAreaMarkerName] call drn_fnc_CL_GetRandomMarkerPos;
+	};
 
-        _group move _position;
-        _group setBehaviour "AWARE";
-        _group setFormation "WEDGE";
-        _group setCombatMode "YELLOW"; // Fire at will
+	_group move _position;
+	_group setBehaviour "AWARE";
+	_group setFormation "WEDGE";
+	_group setCombatMode "YELLOW"; // Fire at will
 
         if ((units _group select 0) distance _position < 100) then {
-            _group setSpeedMode "LIMITED";
-        }
-        else {
-            _group setSpeedMode "NORMAL";
-        };
-    };
+		_group setSpeedMode "LIMITED";
+		} else {
+			_group setSpeedMode "NORMAL";
+		};
+	};
 
-    if (_state == "SEARCHING") then {
-        _position = [_searchAreaMarkerName] call drn_fnc_CL_GetRandomMarkerPos;
-        _group move _position;
+	if (_state == "SEARCHING") then {
+		_position = [_searchAreaMarkerName] call drn_fnc_CL_GetRandomMarkerPos;
+		_group move _position;
 
-        _group setBehaviour "AWARE";
+		_group setBehaviour "AWARE";
 
-        // If searching sub area, make the search a little more intense
-        if (_searchAreaMarkerName != _defaultSearchAreaMarkerName) then {
-            _group setSpeedMode "NORMAL";
-            _group setFormation "WEDGE";
-            _group setCombatMode "RED"; // Fire at will, engage at will
-        }
-        else {
-            _group setSpeedMode "LIMITED";
-            _group setFormation "LINE";
-            _group setCombatMode "YELLOW"; // Fire at will
-        };
-    };
+		// If searching sub area, make the search a little more intense
+		if (_searchAreaMarkerName != _defaultSearchAreaMarkerName) then {
+			_group setSpeedMode "NORMAL";
+			_group setFormation "WEDGE";
+			_group setCombatMode "RED"; // Fire at will, engage at will
+		} else {
+			_group setSpeedMode "LIMITED";
+			_group setFormation "LINE";
+			_group setCombatMode "YELLOW"; // Fire at will
+		};
+	};
 
-    if (_state == "ENGAGING") then {
-        _position = + _enemyPos;
-        _group move _position;
-        _group setBehaviour "AWARE";
-        _group setSpeedMode "NORMAL";
-        _group setFormation "LINE";
-        _group setCombatMode "YELLOW"; // Fire at will
-    };
+	if (_state == "ENGAGING") then {
+		_position = + _enemyPos;
+		_group move _position;
+		_group setBehaviour "AWARE";
+		_group setSpeedMode "NORMAL";
+		_group setFormation "LINE";
+		_group setCombatMode "YELLOW"; // Fire at will
+	};
 
-    if (_debug) then {
-        if (_state == "ENGAGING") then {
-            [_debugDestinationMarkerName, _position, "mil_dot", "ColorRed", "SG" + str _currentEntityNo + " target"] call drn_fnc_CL_SetDebugMarkerAllClients;
-        }
-        else {
-            [_debugDestinationMarkerName, _position, "mil_dot", "ColorRed", "SG" + str _currentEntityNo + " destination"] call drn_fnc_CL_SetDebugMarkerAllClients;
-        };
+	if (_debug) then {
+		if (_state == "ENGAGING") then {
+			[_debugDestinationMarkerName, _position, "mil_dot", "ColorRed", "SG" + str _currentEntityNo + " target"] call drn_fnc_CL_SetDebugMarkerAllClients;
+		} else {
+			[_debugDestinationMarkerName, _position, "mil_dot", "ColorRed", "SG" + str _currentEntityNo + " destination"] call drn_fnc_CL_SetDebugMarkerAllClients;
+		};
 
-        /*
-        if ([_debugMarkerName] call drn_fnc_CL_MarkerExists) then {
-            deleteMarkerLocal _debugMarkerName;
-        };
+		/*
+		if ([_debugMarkerName] call drn_fnc_CL_MarkerExists) then {
+			deleteMarkerLocal _debugMarkerName;
+		};
 
-        _debugMarker = createMarkerLocal [_debugMarkerName, _position];
-        _debugMarker setMarkerTypeLocal "Warning";
-        */
-    };
+		_debugMarker = createMarkerLocal [_debugMarkerName, _position];
+		_debugMarker setMarkerTypeLocal "Warning";
+		*/
+	};
 
-    _moveCompleted = false;
-    _currentPos = position (units _group select 0);
-    _lastPos = + _currentPos;
-    _lastMoveTime = diag_tickTime;
+	_moveCompleted = false;
+	//_currentPos = position (units _group select 0);
+	if ((count (units _group)) > 0) then {
+		_currentPos = position ((units _group) select 0);
+	} else {
+		_currentPos = [0,0,0];
+	};
+	_lastPos = + _currentPos;
+	_lastMoveTime = diag_tickTime;
 
-    while {!_moveCompleted} do {
-        _soldiers = + units _group;
-        {
-            if ((!alive _x) || (!canStand _x)) then {
-                _garbageGroup = createGroup _side;
-                [_x] joinSilent _garbageGroup;
-                [_x] call drn_fnc_CL_AddUnitsToGarbageCollector;
+	while {!_moveCompleted} do {
+		_soldiers = + units _group;
+		{
+			if ((!alive _x) || (!canStand _x)) then {
+				_garbageGroup = createGroup _side;
+				[_x] joinSilent _garbageGroup;
+				[_x] call drn_fnc_CL_AddUnitsToGarbageCollector;
 
-                if (count units _group == 0) then {
-                    deleteGroup _group;
-                    _exitScript = true;
-                    breakTo "mainScope";
-                };
+				if (count units _group == 0) then {
+					deleteGroup _group;
+					_exitScript = true;
+					breakTo "mainScope";
+				};
 
-                if (_debug) then {
-                    ["Search group lost member " + name _x] call drn_fnc_CL_ShowDebugTextAllClients;
-                };
-            };
-        } foreach _soldiers;
+				if (_debug) then {
+					["Search group lost member " + name _x] call drn_fnc_CL_ShowDebugTextAllClients;
+				};
+			};
+		} foreach _soldiers;
 
-        if (count _soldiers == 0) exitWith {
-            if (_debug) then {
-                ["Search group is terminated. Script exiting..."] call drn_fnc_CL_ShowDebugTextAllClients;
-            };
-            _exitScript = true;
-        };
+		if (count _soldiers == 0) exitWith {
+			if (_debug) then {
+				["Search group is terminated. Script exiting..."] call drn_fnc_CL_ShowDebugTextAllClients;
+			};
+			_exitScript = true;
+		};
 
-        {
-            if (_x distance _position < 10) then {
-                _moveCompleted = true;
-            };
-        } foreach units _group;
+		{
+			if (_x distance _position < 10) then {
+				_moveCompleted = true;
+			};
+		} foreach units _group;
 
-        _firstUnit = units _group select 0;
-        _enemyUnit = _firstUnit findNearestEnemy _firstUnit;
+		_firstUnit = units _group select 0;
+		_enemyUnit = _firstUnit findNearestEnemy _firstUnit;
 
-        // If an enemy is sighted
-        if (!isNull _enemyUnit) then {
+		// If an enemy is sighted
+		if (!isNull _enemyUnit) then {
+			// If the enemy is known since earlier
+			if (_state == "ENGAGING") then {
+				if (_enemyUnit distance _enemyPos > 50) then {
+					// If enemy has got more than 100 m away from the position we first spotted him
+					_enemyPos = + position _enemyUnit;
+					breakTo "mainScope";
+				};
+			} else {
+				// If the enemy is seen for the first time now
+				_enemyPos = + position _enemyUnit;
+				_state = "ENGAGING";
+				if (_debug) then {
+					["Search group detected enemy! Engaging..."] call drn_fnc_CL_ShowDebugTextAllClients;
+				};
+				breakTo "mainScope";
+			};
+		} else {
+			// If the enemy is not sighted any more
+			if (_state == "ENGAGING") then {
+				_state = "SEARCHING";
+				_group setBehaviour "AWARE";
 
-            // If the enemy is known since earlier
-            if (_state == "ENGAGING") then {
-                if (_enemyUnit distance _enemyPos > 50) then {
-                    // If enemy has got more than 100 m away from the position we first spotted him
-                    _enemyPos = + position _enemyUnit;
-                    breakTo "mainScope";
-                };
-            }
-            else {
-                // If the enemy is seen for the first time now
-                _enemyPos = + position _enemyUnit;
-                _state = "ENGAGING";
-                if (_debug) then {
-                    ["Search group detected enemy! Engaging..."] call drn_fnc_CL_ShowDebugTextAllClients;
-                };
-                breakTo "mainScope";
-            };
-        }
-        else {
-            // If the enemy is not sighted any more
-            if (_state == "ENGAGING") then {
-                _state = "SEARCHING";
-                _group setBehaviour "AWARE";
+				// If there is no sub area already, create one
+				if (_searchAreaMarkerName == _defaultSearchAreaMarkerName) then {
+					_subAreaCreatedTime = diag_tickTime;
+					_subSearchAreaMarker = createMarkerLocal [_subSearchAreaMarkerName, _enemyPos];
+					_subSearchAreaMarker setMarkerAlphaLocal 0;
+					_subSearchAreaMarker setMarkerShape "RECTANGLE";
+					_subSearchAreaMarker setMarkerSize [_subAreaSize, _subAreaSize];
+					_searchAreaMarkerName = _subSearchAreaMarkerName;
 
-                // If there is no sub area already, create one
-                if (_searchAreaMarkerName == _defaultSearchAreaMarkerName) then {
-                    _subAreaCreatedTime = diag_tickTime;
-                    _subSearchAreaMarker = createMarkerLocal [_subSearchAreaMarkerName, _enemyPos];
-                    _subSearchAreaMarker setMarkerAlphaLocal 0;
-                    _subSearchAreaMarker setMarkerShape "RECTANGLE";
-                    _subSearchAreaMarker setMarkerSize [_subAreaSize, _subAreaSize];
-                    _searchAreaMarkerName = _subSearchAreaMarkerName;
+					if (_debug) then {
+						["Search group lost contact of enemy! Searching sub area..."] call drn_fnc_CL_ShowDebugTextAllClients;
+						[_debugSubAreaMarkerName, getMarkerPos _subSearchAreaMarker, markerSize _subSearchAreaMarker, markerDir _subSearchAreaMarker, markerShape _subSearchAreaMarker, "Default", "SG" + str _currentEntityNo + " sub search area"] call drn_fnc_CL_SetDebugMarkerAllClients;
+//						[_debugSubAreaMarkerName, _enemyPos, [100, 100], 0, "RECTANGLE", "Default", "SG sub search area"] call drn_fnc_CL_SetDebugMarkerAllClients;
+					};
+				} else {
+					// If there is a sub area already, move the existing one
+					_subSearchAreaMarker setMarkerPosLocal _enemyPos;
+					_subAreaCreatedTime = diag_tickTime;
 
-                    if (_debug) then {
-                        ["Search group lost contact of enemy! Searching sub area..."] call drn_fnc_CL_ShowDebugTextAllClients;
-                        [_debugSubAreaMarkerName, getMarkerPos _subSearchAreaMarker, markerSize _subSearchAreaMarker, markerDir _subSearchAreaMarker, markerShape _subSearchAreaMarker, "Default", "SG" + str _currentEntityNo + " sub search area"] call drn_fnc_CL_SetDebugMarkerAllClients;
-//                        [_debugSubAreaMarkerName, _enemyPos, [100, 100], 0, "RECTANGLE", "Default", "SG sub search area"] call drn_fnc_CL_SetDebugMarkerAllClients;
-                    };
-                }
-                else {
-                    // If there is a sub area already, move the existing one
-                    _subSearchAreaMarker setMarkerPosLocal _enemyPos;
-                    _subAreaCreatedTime = diag_tickTime;
+					if (_debug) then {
+						["Search group resetting sub area..."] call drn_fnc_CL_ShowDebugTextAllClients;
+						[_debugSubAreaMarkerName, getMarkerPos _subSearchAreaMarker, markerSize _subSearchAreaMarker, markerDir _subSearchAreaMarker, markerShape _subSearchAreaMarker, "Default", "SG" + str _currentEntityNo + " sub search area"] call drn_fnc_CL_SetDebugMarkerAllClients;
+					};
+				};
+			};
+		};
 
-                    if (_debug) then {
-                        ["Search group resetting sub area..."] call drn_fnc_CL_ShowDebugTextAllClients;
-                        [_debugSubAreaMarkerName, getMarkerPos _subSearchAreaMarker, markerSize _subSearchAreaMarker, markerDir _subSearchAreaMarker, markerShape _subSearchAreaMarker, "Default", "SG" + str _currentEntityNo + " sub search area"] call drn_fnc_CL_SetDebugMarkerAllClients;
-                    };
-                };
-            };
-        };
+		_currentPos = position (units _group select 0);
+		if (_currentPos select 0 != _lastPos select 0 || _currentPos select 1 != _lastPos select 1) then {
+			_lastPos = + _currentPos;
+			_lastMoveTime = diag_tickTime;
+		};
 
-        _currentPos = position (units _group select 0);
-        if (_currentPos select 0 != _lastPos select 0 || _currentPos select 1 != _lastPos select 1) then {
-            _lastPos = + _currentPos;
-            _lastMoveTime = diag_tickTime;
-        };
+		if (diag_tickTime > _lastMoveTime + _stationaryMaxTimeSec) then {
+			_moveCompleted = true;
+			if (_debug) then {
+				["Search group stationary for a long time. Picking new destination..."] call drn_fnc_CL_ShowDebugTextAllClients;
+			};
+		};
 
-        if (diag_tickTime > _lastMoveTime + _stationaryMaxTimeSec) then {
-            _moveCompleted = true;
-            if (_debug) then {
-                ["Search group stationary for a long time. Picking new destination..."] call drn_fnc_CL_ShowDebugTextAllClients;
-            };
-        };
+		// If search on sub area is considered finished
+		if (_searchAreaMarkerName != _defaultSearchAreaMarkerName && diag_tickTime > _subAreaCreatedTime + _subAreaSearchTimeSec) then {
+			deleteMarkerLocal _subSearchAreaMarker;
+			_searchAreaMarkerName = _defaultSearchAreaMarkerName;
+			_moveCompleted = true;
+			if (_debug) then {
+				["Search group's sub search area is clear. Returning to original search area..."] call drn_fnc_CL_ShowDebugTextAllClients;
+				[_debugSubAreaMarkerName] call drn_fnc_CL_DeleteDebugMarkerAllClients;
+			};
+		};
 
-        // If search on sub area is considered finished
-        if (_searchAreaMarkerName != _defaultSearchAreaMarkerName && diag_tickTime > _subAreaCreatedTime + _subAreaSearchTimeSec) then {
-            deleteMarkerLocal _subSearchAreaMarker;
-            _searchAreaMarkerName = _defaultSearchAreaMarkerName;
-            _moveCompleted = true;
-            if (_debug) then {
-                ["Search group's sub search area is clear. Returning to original search area..."] call drn_fnc_CL_ShowDebugTextAllClients;
-                [_debugSubAreaMarkerName] call drn_fnc_CL_DeleteDebugMarkerAllClients;
-            };
-        };
+		// If transporting to search area, and the target position is outside the search area (the search area could have been moved), then finish the current move and pick a new position inside search area.
+		if (_state == "TRANSPORTING" && !([_position, _searchAreaMarkerName] call drn_fnc_CL_PositionIsInsideMarker)) then {
+			_moveCompleted = true;
+		};
 
-        // If transporting to search area, and the target position is outside the search area (the search area could have been moved), then finish the current move and pick a new position inside search area.
-        if (_state == "TRANSPORTING" && !([_position, _searchAreaMarkerName] call drn_fnc_CL_PositionIsInsideMarker)) then {
-            _moveCompleted = true;
-        };
+		if (_moveCompleted) then {
+			if (!([position (units _group select 0), _searchAreaMarkerName] call drn_fnc_CL_PositionIsInsideMarker)) then {
+				_state = "TRANSPORTING"
+			} else {
+				if (_state == "TRANSPORTING") then {
+					_state = "SEARCHING";
+				};
+			};
+		};
 
-        if (_moveCompleted) then {
-            if (!([position (units _group select 0), _searchAreaMarkerName] call drn_fnc_CL_PositionIsInsideMarker)) then {
-                _state = "TRANSPORTING"
-            }
-            else {
-                if (_state == "TRANSPORTING") then {
-                    _state = "SEARCHING";
-                };
-            };
-        };
-
-        sleep 10;
-    };
+		sleep 10;
+	};
 };
 
 if (_debug) then {
@@ -309,6 +298,3 @@ if (_debug) then {
     [_debugDestinationMarkerName] call drn_fnc_CL_DeleteDebugMarkerAllClients;
     [_debugSubAreaMarkerName] call drn_fnc_CL_DeleteDebugMarkerAllClients;
 };
-
-
-
