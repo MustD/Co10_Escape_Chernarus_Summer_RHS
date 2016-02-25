@@ -190,8 +190,17 @@ AT_FNC_Revive_Unconscious =
 	_sec = secondaryWeapon _unit;
 	_hand = handgunWeapon _unit;
 	_pSet = (_prim == "");
+	if (_pSet) then {
+		_unit setVariable ["AT_Revive_primaryWeapon", nil];
+	};
 	_sSet = (_sec == "");
+	if (_sSet) then {
+		_unit setVariable ["AT_Revive_secondaryWeapon", nil];
+	};
 	_hSet = (_hand == "");
+	if (_hSet) then {
+		_unit setVariable ["AT_Revive_handgunWeapon", nil];
+	};
 	_weapItems = weaponsItems _unit;
 	scopeName "_AT_FNC_Revive_Unconscious";
 	if (!(_pSet && _sSet && _hSet)) then {
