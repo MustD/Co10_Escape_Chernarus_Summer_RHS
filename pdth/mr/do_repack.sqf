@@ -78,6 +78,23 @@
 	@todo pass parameters for playSound3D: name, volume, pitch, max hearable distance;
 		test on containers.
 **/
+private ["_fnc_setUp_WH"];
+_fnc_setUp_WH = {
+	private ["_ref", "_ret"];
+	_ref = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
+	_ret = objNull;
+	if (!(isNull _ref)) then {
+		private ["_refBox", "_whPos"];
+		_refBox = boundingBoxReal _ref;
+		_whPos = _ref modelToWorld [0, (_refBox select 1) select 1, 0];
+		_whPos set [2, 0];
+		_ret = createVehicle ["GroundWeaponHolder", _whPos, [], 0, "CAN_COLLIDE"];
+		_ret setDir (45 + direction _ref);
+		_ret setVectorUp (surfaceNormal _whPos);
+	};
+	_ret
+};
+
 private ["_target", "_caller", "_nnT", "_nnC", "_isManT", "_isManC", "_onFootC", "_plC", "_args", "_stopVars", "_haveSV", "_localT", "_localC"];
 _target = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
 _caller = [_this, 1, objNull, [objNull]] call BIS_fnc_param;
@@ -189,8 +206,9 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 
 			if (count _nrMags > 0) then {
 				// Found not full >1 mags of same class
-				private ["_rptype", "_delays", "_pmtrb", "_pmtrc", "_pmtrr", "_pmtrru", "_pmtrm", "_curMuz", "_haveDelays"];
+				private ["_rptype", "_delays", "_pmtrb", "_pmtrc", "_pmtrr", "_pmtrru", "_pmtrm", "_curMuz", "_haveDelays", "_gwhDisp"];
 				_haveDelays =false;
+				_gwhDisp = objNull;
 				//_args = _this select 3;
 				if (!(isNil "_args")) then {
 					_rptype = _args select 0;
@@ -263,17 +281,18 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 						if (_curMuz != _type) then {
 							sleep 0.2;
 						};
+						_caller playMove "AinvPknlMstpSnonWrflDnon_medic0";
+					} else {
+						_caller playMove "AinvPknlMstpSnonWnonDnon_medic";
 					};
-					_caller playMove "AinvPknlMstpSnonWrflDnon_medic0";
-				};
-				if (_plC && _localC) then {
 					_caller groupChat "Repack started...";
 				};
 				if (!isNil "_pmtrb") then {
 					if (_pmtrb > 0) then {
-						sleep _pmtrb*(0.9+random(0.2));
+						sleep _pmtrb*(0.85+random(0.3));
 					};
 				};
+				scopeName "repack";
 				{ //forEach _nrMags;
 					scopeName "_nrMagsSN";
 					_clName = _x;
@@ -292,6 +311,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 					};
 					switch (_rptype) do {
 						case "NONROUNDWISE": {
+							scopeName "nonroundwise";
 							if (_remain > 0) then {
 								private ["_mag", "_rem"];
 								_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars) || (_plC && (!alive _caller));
@@ -300,7 +320,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 									if (_plC && _localC) then {
 										_caller groupChat "Repack cancelled.";
 									};
-									breakTo "roundwise";
+									breakTo "repack";
 								};
 								_mag = floor (_remain / _fullMagCount);
 								_rem = _remain % _fullMagCount;
@@ -338,7 +358,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 								};
 								if (!isNil "_pmtrc") then {
 									if (_pmtrc > 0) then {
-										sleep _pmtrc*(0.9+random(0.2));
+										sleep _pmtrc*(0.85+random(0.3));
 									};
 								};
 								if (_plC && _localC) then {
@@ -347,11 +367,10 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 							};
 						};
 						case "ROUNDWISE": {
-							private ["_mCounts", "_i", "_iPut", "_iTake", "_leftToPut", "_haveToTake", "_canTake", "_oldHave", "_gwh", "_magsCopy"];
+							private ["_mCounts", "_i", "_iPut", "_iTake", "_leftToPut", "_haveToTake", "_canTake", "_oldHave", "_gwh"];
 							// ArmA 3 v1.42, BIS_fnc_sortBy spoils passed array with strings "BIS_fnc_sortByRemoveMe" strings if some items were removed,
 							// so we get a copy of array first // deep copy is done by unary + operator
-							_magsCopy = +_mags;
-							_mCounts = [_magsCopy, [_clName, _fullMagCount], {_x select 1}, "DESCEND", {(((_x select 0) == _input0) && ((_x select 1) < _input1))}] call BIS_fnc_sortBy;
+							_mCounts = [+_mags, [_clName, _fullMagCount], {_x select 1}, "DESCEND", {(((_x select 0) == _input0) && ((_x select 1) < _input1))}] call BIS_fnc_sortBy;
 							_iTake = count _mCounts - 1;
 							while {((_mCounts select _iTake) select 1) == 0} do {
 								_iTake = _iTake - 1;
@@ -371,6 +390,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 									_target addMagazines [_clName, _oldMags - (_iTake+1)];
 								};
 							} else {
+								clearMagazineCargoGlobal _target;
 								{
 									if (_clName != (_x select 0)) then {
 										_target addMagazineAmmoCargo [_x select 0, 1, _x select 1];
@@ -383,6 +403,19 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 
 							scopeName "roundwise";
 							while {_iPut < _iTake} do {
+								if (_plC && _haveDelays) then {
+									if (!(isNull _gwhDisp)) then {
+										deleteVehicle _gwhDisp;
+									};
+									_gwhDisp = [_target] call _fnc_setUp_WH;
+									[[_gwhDisp, false], "enableSimulationGlobal", false] call BIS_fnc_MP;
+									if (!(isNull _gwhDisp)) then {
+										for [{_i=_iPut}, {_i <= _iTake}, {_i = _i + 1}] do {
+											_gwhDisp addMagazineAmmoCargo [_clName, 1, (_mCounts select _i) select 1];
+										};
+									};
+									_gwhDisp setDamage 1;
+								};
 								_oldHave = (_mCounts select _iPut) select 1;
 								_leftToPut = _fullMagCount - _oldHave;
 								_haveToTake = (_mCounts select _iTake) select 1;
@@ -398,7 +431,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 									};
 									if (!isNil "_pmtrm") then {
 										if (_pmtrm > 0) then {
-											sleep _pmtrm*(0.9+random(0.2));
+											sleep _pmtrm*(0.85+random(0.3));
 										};
 									};
 									if (_haveToTake > _leftToPut) then {
@@ -408,7 +441,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 										};
 										if (!isNil "_pmtrm") then {
 											if (_pmtrm > 0) then {
-												sleep _pmtrm*(0.9+random(0.2));
+												sleep _pmtrm*(0.85+random(0.3));
 											};
 										};
 									};
@@ -416,7 +449,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 									if (!isNil "_pmtrru") then {
 										for [{_i=0}, {_i < _canTake}, {_i = _i + 1}] do {
 											if (_pmtrru > 0) then {
-												sleep _pmtrru*(0.9+random(0.2));
+												sleep _pmtrru*(0.85+random(0.3));
 											};
 											if (!isNil "pdth_mr_sound_round_click_unload") then {
 												playSound3D [pdth_mr_sound_round_click_unload, _target, false, getPosASL _target, 1.76+random(1.25), 1.4+random(0.4), 10];
@@ -428,7 +461,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 											if (_haveSV) then {
 												_mCounts set [_iTake, [_clName, _haveToTake-_i-1]];
 												_cancel = true;
-												_gwh = "groundWeaponHolder" createVehicle position _target;
+												_gwh = [_target] call _fnc_setUp_WH;
 												_gwh addMagazineAmmoCargo [_clName, 1, _i+1];
 												if (_plC && _localC) then {
 													_caller groupChat format ["Repack cancelled, %1 rounds lost", _i+1];
@@ -440,7 +473,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 									if (!isNil "_pmtrr") then {
 										for [{_i=0}, {_i < _canTake}, {_i = _i + 1}] do {
 											if (_pmtrr > 0) then {
-												sleep _pmtrr*(0.9+random(0.2));
+												sleep _pmtrr*(0.85+random(0.3));
 											};
 											if (!isNil "pdth_mr_sound_round_click") then {
 												playSound3D [pdth_mr_sound_round_click, _target, false, getPosASL _target, 3.1, 1, 10];
@@ -453,7 +486,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 												_mCounts set [_iPut, [_clName, _oldHave+_i+1]];
 												_mCounts set [_iTake, [_clName, _haveToTake-_canTake]];
 												_cancel = true;
-												_gwh = "groundWeaponHolder" createVehicle position _target;
+												_gwh = [_target] call _fnc_setUp_WH;
 												_gwh addMagazineAmmoCargo [_clName, 1, _canTake-(_i+1)];
 												if (_plC && _localC) then {
 													_caller groupChat format ["Repack cancelled, %1 rounds lost", _canTake-(_i+1)];
@@ -489,12 +522,16 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 								};
 								if (_plC && _localC) then {
 									if (((animationState _caller) find "medic") == -1) then {
-										_caller switchMove "AinvPknlMstpSnonWrflDnon_medic0";
+										if ((primaryWeapon _caller) != "") then {
+											_caller switchMove "AinvPknlMstpSnonWrflDnon_medic0";
+										} else {
+											_caller switchMove "AinvPknlMstpSnonWnonDnon_medic";
+										};
 									};
 								};
 								if (!isNil "_pmtrm") then {
 									if (_pmtrm > 0) then {
-										sleep _pmtrm*(0.9+random(0.2));
+										sleep _pmtrm*(0.85+random(0.3));
 									};
 								};
 								_haveSV = ([[ "pdth_mr_repack_cancelled", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars)  || (_plC && (!alive _caller))
@@ -503,36 +540,54 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 								if (_haveSV) then {
 									_cancel = true;
 									if (_plC && _localC) then {
-										_caller groupChat format ["Repack cancelled."];
+										_caller groupChat "Repack cancelled.";
 									};
 									breakTo "roundwise";
 								};
 							};
 							_var = _cancel && (_iPut < _iTake) && (((_mCounts select _iPut) select 1) < _fullMagCount);
-							for [{_i=_iPut}, {_i <= _iTake}, {_i = _i + 1}] do {
-								if (((_mCounts select _i) select 1) > 0) then {
-									if (_isManT) then {
-										_target addMagazine [_clName, (_mCounts select _i) select 1];
-									} else {
-										_target addMagazineAmmoCargo [_clName, 1, (_mCounts select _i) select 1];
+							if (!_plC || (alive _caller)) then {
+								if (!(isNull _gwhDisp)) then {
+									deleteVehicle _gwhDisp;
+									_gwhDisp = objNull;
+								};
+								for [{_i=_iPut}, {_i <= _iTake}, {_i = _i + 1}] do {
+									if (((_mCounts select _i) select 1) > 0) then {
+										if (_isManT) then {
+											_target addMagazine [_clName, (_mCounts select _i) select 1];
+										} else {
+											_target addMagazineAmmoCargo [_clName, 1, (_mCounts select _i) select 1];
+										};
 									};
 								};
+							};
+							if (_cancel) then {
+								breakTo "repack";
 							};
 						}; // case "ROUNDWISE"
 					};
 				} forEach _nrMags;
-				if (_plC && _localC) then {
+				if (_plC && _localC && (alive _caller)) then {
 					if (((animationState _caller) find "medic") != -1) then {
 						_caller playMove "AinvPknlMstpSnonWrflDnon_medicEnd";
 					};
 				};
 				if (!(isNil "_curMuz")) then {
-					if (_plC && _localC) then {
+					if (_plC && _localC && (alive _caller)) then {
 						_caller selectWeapon _curMuz;
 					};
 				};
-			};
-		};
+				if (!(isNull _gwhDisp)) then {
+					if (_plC && (!alive _caller)) then {
+						[[_gwhDisp, true], "enableSimulationGlobal", false] call BIS_fnc_MP;
+						_gwhDisp setDamage 0;
+					} else {
+						deleteVehicle _gwhDisp;
+						_gwhDisp = objNull; // not really neccessary
+					};
+				};
+			}; // if (count _nrMags > 0)
+		}; // if (count _mags > 0)
 		if (_cancel) then {
 			_var = _target call pdth_mr_has_repack;
 			_target setVariable ["pdth_mr_repack_show_action", _var, !_localT];
