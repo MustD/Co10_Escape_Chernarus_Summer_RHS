@@ -83,7 +83,7 @@ _fnc_FindRoadBlockSegment = {
 
     _spawnDistanceDiff = _maxSpawnDistance - _minSpawnDistance;//Half?
     _roadSegment = _result;
-    _refUnit = vehicle ((units _referenceGroup) select floor random count units _referenceGroup);
+    _refUnit = vehicle ((units _referenceGroup) call BIS_fnc_selectRandom);
 
     _isOk = false;
     _tries = 0;
@@ -96,7 +96,7 @@ _fnc_FindRoadBlockSegment = {
 
         _roadSegments = [_refPosX, _refPosY] nearRoads (_spawnDistanceDiff);
 		if(count _roadSegments > 0) then {
-			_roadSegment = _roadSegments select floor random count _roadSegments;
+			_roadSegment = _roadSegments call BIS_fnc_selectRandom;
             _isOk = true;
 		}
         else {
@@ -192,7 +192,7 @@ _fnc_CreateRoadBlock = {
     if (_side == A3E_VAR_Side_Ind) then {
         _possibleVehicles = a3e_arr_Escape_RoadBlock_MannedVehicleTypes_Ind;
     };
-    _result = [_pos, _dir, _possibleVehicles select floor random count _possibleVehicles, _side] call BIS_fnc_spawnVehicle;
+    _result = [_pos, _dir, _possibleVehicles call BIS_fnc_selectRandom, _side] call BIS_fnc_spawnVehicle;
     _vehicle = _result select 0;
     _crew = _result select 1;
     _group = _result select 2;
@@ -234,14 +234,10 @@ _fnc_CreateRoadBlock = {
         _guardTypes = a3e_arr_Escape_InfantryTypes_Ind;
     };
 
-    //(_guardTypes select floor random count _guardTypes) createUnit [_pos, _group, "", 0.5, "LIEUTNANT"];
-    //(_guardTypes select floor random count _guardTypes) createUnit [_pos, _group, "", 0.5, "LIEUTNANT"];
-    //(_guardTypes select floor random count _guardTypes) createUnit [_pos, _group, "", 0.5, "LIEUTNANT"];
-    //(_guardTypes select floor random count _guardTypes) createUnit [_pos, _group, "", 0.5, "LIEUTNANT"];
-    _group createUnit [(_guardTypes select floor random count _guardTypes), _pos, [], 0, "FORM"];
-    _group createUnit [(_guardTypes select floor random count _guardTypes), _pos, [], 0, "FORM"];
-    _group createUnit [(_guardTypes select floor random count _guardTypes), _pos, [], 0, "FORM"];
-    _group createUnit [(_guardTypes select floor random count _guardTypes), _pos, [], 0, "FORM"];
+    _group createUnit [(_guardTypes call BIS_fnc_selectRandom), _pos, [], 0, "FORM"];
+    _group createUnit [(_guardTypes call BIS_fnc_selectRandom), _pos, [], 0, "FORM"];
+    _group createUnit [(_guardTypes call BIS_fnc_selectRandom), _pos, [], 0, "FORM"];
+    _group createUnit [(_guardTypes call BIS_fnc_selectRandom), _pos, [], 0, "FORM"];
 
     {
         _x setUnitRank "LIEUTNANT";
@@ -288,7 +284,7 @@ while {true} do {
         if(!(isNil "_roadSegment")) then {
             if(!(_nullRoad == _roadSegment)) then {
     			if (!isNull _roadSegment) then {
-                    _faction = _factionsArray select (floor (random (count _factionsArray)));
+                    _faction = _factionsArray call BIS_fnc_selectRandom;
     				_units = [_roadSegment, _faction, _possibleInfantryTypes, _possibleVehicleTypes, _fnc_OnSpawnInfantryGroup, _fnc_OnSpawnMannedVehicle] call _fnc_CreateRoadBlock;
 
     				_roadBlockItem = [_instanceNo, _roadSegment, _units]; // instance no, road segment, units

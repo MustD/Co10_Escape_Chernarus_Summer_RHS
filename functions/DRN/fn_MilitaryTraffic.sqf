@@ -69,7 +69,7 @@ if (isNil "drn_fnc_MilitaryTraffic_MoveVehicle") then {
         }
         else {
             _roadSegments = _vehicle nearroads 2000;
-            _destinationSegment = _roadSegments select floor random count _roadSegments;
+            _destinationSegment = _roadSegments call BIS_fnc_selectRandom;
             _destinationPos = getPos _destinationSegment;
         };
 
@@ -133,7 +133,7 @@ _fnc_FindSpawnSegment = {
 
     _spawnDistanceDiff = _maxSpawnDistance - _minSpawnDistance;
     _roadSegment = "NULL";
-    _refUnit = vehicle ((units _referenceGroup) select floor random count units _referenceGroup);
+    _refUnit = vehicle ((units _referenceGroup) call BIS_fnc_selectRandom);
 
     _isOk = false;
     _tries = 0;
@@ -147,7 +147,7 @@ _fnc_FindSpawnSegment = {
         _roadSegments = [_refPosX, _refPosY] nearRoads (_spawnDistanceDiff);
 
         if (count _roadSegments > 0) then {
-            _roadSegment = _roadSegments select floor random count _roadSegments;
+            _roadSegment = _roadSegments call BIS_fnc_selectRandom;
 
             // Check if road segment is at spawn distance
             _tooFarAwayFromAll = true;
@@ -224,8 +224,7 @@ while {true} do {
         else {
             _minDistance = _minSpawnDistance;
         };
-	// pedeathtrian: commented: variable value not used
-        //_refUnit = vehicle ((units _referenceGroup) select floor random count units _referenceGroup);
+        _refUnit = vehicle ((units _referenceGroup) call BIS_fnc_selectRandom);
         _spawnSegment = [_referenceGroup, _minDistance, _maxSpawnDistance, _activeVehiclesAndGroup] call _fnc_FindSpawnSegment;
 
         // If there were spawn positions
@@ -249,7 +248,7 @@ while {true} do {
                 };
             };
 
-            _destinationSegment = _roadSegments select floor random count _roadSegments;
+            _destinationSegment = _roadSegments call BIS_fnc_selectRandom;
             _destinationPos = getPos _destinationSegment;
 
             _direction = ((_destinationPos select 0) - (getPos _spawnSegment select 0)) atan2 ((_destinationPos select 1) - (getpos _spawnSegment select 1));
@@ -299,7 +298,7 @@ while {true} do {
             _faction = _side;
             // Create vehicle
             if(_side != civilian) then {
-                _faction = _factionsArray select (floor (random (count _factionsArray)));
+                _faction = _factionsArray call BIS_fnc_selectRandom;
             };
             if(_side == civilian) then {
                 _faction = civilian;
@@ -312,7 +311,7 @@ while {true} do {
                 _possibleVehicles = a3e_arr_Escape_MilitaryTraffic_EnemyVehicleClasses_Ind;
             };
 
-            _vehicleType = _possibleVehicles select floor (random count _possibleVehicles);
+            _vehicleType = _possibleVehicles call BIS_fnc_selectRandom;
             _result = [_pos, _direction + 90, _vehicleType, _faction] call BIS_fnc_spawnVehicle;
             _vehicle = _result select 0;
             _vehiclesCrew = _result select 1;

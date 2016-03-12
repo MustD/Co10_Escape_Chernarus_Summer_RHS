@@ -1,33 +1,83 @@
-private ["_centerPos", "_rotateDir"];
-private ["_object", "_pos", "_dir"];
-private ["_i", "_j", "_k", "_cpx", "_cpy", "_cpz", "_x", "_y", "_z", "_prMaterials", "_prMaterial", "_rotPos"];
-
-_centerPos = _this select 0;
-_rotateDir = _this select 1;
-
-_cpx = [_centerPos, 0, 0, [0]] call BIS_fnc_param;
-_cpy = [_centerPos, 1, 0, [0]] call BIS_fnc_param;
+params ["_centerPos", "_rotateDir"];
+_centerPos params [["_cpx", 0, [0]], ["_cpy", 0, [0]]];
+private ["_object", "_pos", "_dir", "_cpz"];
+private ["_i", "_j", "_k", "_prMaterials", "_prMaterial", "_rotPos", "_placePrisonObj"];
 _cpz = getTerrainHeightASL _centerPos;
+
+_placePrisonObj = {
+	/*
+		Parameters:
+		0: _clName String: class name of object to place;
+		1: _x: Number: x offset from _centerPos; x axis is to right from _rotateDir;
+		2: _y: Number: y offset from _centerPos; y axis is codirectional to prison's _rotateDir;
+		3: _zOffArray: Array: [_zType, _zOff]: defult is ["REL", 0]
+			_zType: String: "CENTER" for offset against _centerPos's absolute z coord (ASL); OR "REL" (or any) for relative to ground;
+			_zOff: Number: z offset;
+		4: _rotDir: Number: rotation added to prison's _rotateDir.
+		5: _simul: Boolean: if set to false, disables simulation globally;
+		6: _normalize: Boolean: set object normal vector according to surface; otherwise Z axis used; default is false;
+		7: _vecsDirUp: Array: if set, overrides _normalize to false;
+			[_vecDir, _vecUp]: _vecDir: Array of Numbers: [_dX, _dY, _dZ];
+			_vecUp: Array of Numbers: [_uX, _uY, _uZ];
+		8: _varName: String: if set, variable with such name is set to returned value, and then published over network, i.e. next call performed:
+			missionNamespace setVariable [_varName, _obj, true];
+
+		Return: Object: created object
+	*/
+	params [["_clName", "", [""]], ["_x", 0, [0]], ["_y", 0, [0]], ["_zOffArray", ["REL", 0], [[]], [2]], ["_rotDir", 0, [0]],  ["_simul", false, [false]], ["_normalize", false, [false]], ["_vecsDirUp", [[0,1,0], [0,0,1]], [[]], [2]], ["_varName", "", [""]]];
+	diag_log format ["_placePrisonObj: %1", _this];
+	_zOffArray params [["_zType", "REL", [""]], ["_zOff", 0, [0]]];
+	_vecsDirUp params [["_vecDir", [0,1,0], [[]], [3]], ["_vecUp", [0,0,1], [[]], [3]]];
+	private ["_pos", "_z", "_obj"];
+	_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
+	_obj = createVehicle [_clName, _pos, [], 0, "CAN_COLLIDE"];
+	if (_zType == "CENTER") then {
+		_z = _cpz+_zOff;
+	} else {
+		_z = (getTerrainHeightASL _pos) + _zOff;
+	};
+	_pos set [2, _z];
+	_obj setPosASL _pos;
+	_obj setDir (_rotateDir+_rotDir);
+	if ((count _this) > 7) then {
+		//diag_log format ["_vecDir: %1; _vecUp: %2", _vecDir, _vecUp];
+		_obj setVectorDirAndUp [_vecDir, [[0,0,0], _vecUp, _rotateDir+_rotDir] call a3e_fnc_RotatePosition];
+	} else {
+		if (_normalize) then {
+			_obj setVectorUp (surfaceNormal _pos);
+		} else {
+			_obj setVectorUp [0,0,1];
+		};
+	};
+	_obj allowDamage false;
+	if (!_simul) then {
+		_obj enableSimulationGlobal _simul;
+	};
+	if (_varName != "") then {
+		missionNamespace setVariable [_varName, _obj, true];
+	};
+	_obj
+};
 
 /**	(switch to monospace)
 
-	+--+    1       2           +--+  _prMaterials: Array: [ prisonMaterialsSet1 (, prisonMaterialsSet2, ...)]
+	+--+    1       2       1   +--+  _prMaterials: Array: [ prisonMaterialsSet1 (, prisonMaterialsSet2, ...)]
 	| 3||======||------||======|| 3|      prisonMaterialsSet1: Array: [ wallElement, gateElement (, cornerElement) ]
 	+--+                        +--+          wallElement: Array: [ className, numPerSide, length (,width(,pillar(,zOffset)))]
-	 --                          --               className: String: CfgVehicles classname to construct wall segment,
-	 ||    1 - wall element      ||                 e.g. "Land_Wall_Tin_4", "Land_City_4m_F", "Land_City2_4m_F", ...
-	 ||    2 - gate              ||               numPerSide: Number: of elements per prison side. Prison side is calculated using this value.
-	 --    3 - corner            --               length: Number: effective linear size of element.
-	 --                          --               width: Number: wall thickness.
-	 ||                          ||               pillar: Number: defines whether wall element has builtin pillar.
-	 ||                          ||                 If no cornerElement specified wall side starts on corner and
-	 --                          --                 end before side end, leaving space for next side start element's pillar.
+	 --    1 - wall element      --               className: String: CfgVehicles classname to construct wall segment,
+	 ||    2 - gate              ||                 e.g. "Land_Wall_Tin_4", "Land_City_4m_F", "Land_City2_4m_F", ...
+	 || 1  3 - corner            || 1             numPerSide: Number: of elements per prison side. Prison side is calculated using this value.
+	 --                          --               length: Number: effective linear size of element.
+	 --            ^ y           --               width: Number: wall thickness.
+	 ||            |             ||               pillar: Number: defines whether wall element has builtin pillar.
+	 || 1          + --> x       || 1               If no cornerElement specified wall side starts on corner and
+	 --       _centerPos         --                 end before side end, leaving space for next side start element's pillar.
 	 --                          --                 If wall element has builtin pillar on its end, it can be useful to start
 	 ||                          ||                 wall side leaving space for previous side end pillar, and end leaving no
-	 ||                          ||                 space for next side start pillar. To do so, define pillar to be:
+	 || 1                        || 1               space for next side start pillar. To do so, define pillar to be:
 	 --                          --                    1: wall element has pillar on its start;
-	+--+                        +--+                   2: wall element has pillar on its end.
-	|  ||======||======||======||  |                   0 is default value meaning no builtin pillar
+	+--+     1      1       1   +--+                   2: wall element has pillar on its end.
+	| 3||======||======||======|| 3|                   0 is default value meaning no builtin pillar
 	+--+                        +--+                Builtin pillar size is considered equal to wall width.
 	                                              zOffset: Number: if set, all wall segments will be leveled to _centerPos z coordinate + zOffset.
 
@@ -61,35 +111,13 @@ _prMaterials = [
 	[["Land_Stone_4m_F", 3, 4, 0.5], ["Land_Stone_Gate_F", 5], ["Land_Stone_pillar_F", 0.5]]
 ];
 
-private ["_wallElem", "_wallElNm", "_elems", "_wallElLn", "_wallElWd", "_wallElPl", "_wallZOff"];
-private ["_gateElem", "_gateElNm", "_gateElLn", "_gateElTO", "_gateElLO"];
-private ["_crnrElem", "_crnrElNm", "_crnrElLn"];
 _prMaterial = _prMaterials call BIS_fnc_selectRandom;
+diag_log format ["_prMaterial: %1", _prMaterial];
 
-_wallElem = [_prMaterial, 0, [], [[]], [3,4,5,6]] call BIS_fnc_param;
-_wallElNm = [_wallElem, 0, "Land_Wall_Tin_4", [""]] call BIS_fnc_param;
-_elems    = [_wallElem, 1, 3, [0]] call BIS_fnc_param;
-_wallElLn = [_wallElem, 2, 4, [0]] call BIS_fnc_param;
-_wallElWd = [_wallElem, 3, 0, [0]] call BIS_fnc_param;
-_wallElPl = [_wallElem, 4, 0, [0]] call BIS_fnc_param;
-_wallZOff = [_wallElem, 5, -666, [0]] call BIS_fnc_param;
-if (_wallZOff == -666) then {
-	_wallZOff = nil;
-};
-
-_gateElem = [_prMaterial, 1, [], [[]], [2,3,4]] call BIS_fnc_param;
-_gateElNm = [_gateElem, 0, "Land_City_Gate_F", [""]] call BIS_fnc_param;
-_gateElLn = [_gateElem, 1, 4, [0]] call BIS_fnc_param;
-_gateElTO = [_gateElem, 2, 0, [0]] call BIS_fnc_param;
-_gateElLO = [_gateElem, 3, 0, [0]] call BIS_fnc_param;
-
-_crnrElem = [_prMaterial, 2, [], [[]], [2,3]] call BIS_fnc_param;
-_crnrElNm = [_crnrElem, 0, "", [""]] call BIS_fnc_param;
-_crnrElLn = [_crnrElem, 1, 0, [0]] call BIS_fnc_param;
-_crnrZOff = [_crnrElem, 2, -666, [0]] call BIS_fnc_param;
-if (_crnrZOff == -666) then {
-	_crnrZOff = nil;
-};
+_prMaterial params [["_wallElem", [], [[]], [3,4,5,6]], ["_gateElem", [], [[]], [2,3,4]], ["_crnrElem", [], [[]], [2,3]]];
+_wallElem params [["_wallElNm", "Land_Wall_Tin_4", [""]], ["_elems", 3, [0]], ["_wallElLn", 4, [0]], ["_wallElWd", 0, [0]], ["_wallElPl", 0, [0]], ["_wallZOff", nil, [0,nil]]];
+_gateElem params [["_gateElNm", "Land_City_Gate_F", [""]], ["_gateElLn", 4, [0]], ["_gateElTO", 0, [0]], ["_gateElLO", 0, [0]]];
+_crnrElem params [["_crnrElNm", "", [""]], ["_crnrElLn", 0, [0]], ["_crnrZOff", nil, [0,nil]]];
 
 private ["_stepSign", "_BIPillarOffset", "_wallStartOffset"];
 _BIPillarOffset = 0;
@@ -113,22 +141,16 @@ _wallStartOffset = (_elems*_wallElLn+_crnrElLn)/2;
 // now da magik kicks in
 for [{_i = 0}, {_i < 2}, {_i = _i + 1}] do {
 	for [{_j = 0}, {_j < 2}, {_j = _j + 1}] do {
-		_dir = _rotateDir + _j*180 - _i*90 + 90;
+		_dir = _j*180 - _i*90 + 90;
 		_stepSign = if (_i == _j) then {1} else {-1};
 		if (_crnrElNm != "") then {
-			_x = -_stepSign*_wallStartOffset;
-			_y = _wallStartOffset * (_j*2-1);
-			_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
-			_object = createVehicle [_crnrElNm, _pos, [], 0, "CAN_COLLIDE"];
-			if (isNil "_crnrZOff") then {
-				_z = getTerrainHeightASL _pos;
-			} else {
-				_z = _cpz+_crnrZOff;
-			};
-			_pos set [2, _z];
-			_object setPosASL _pos;
-			_object setDir _dir;
-			_object enableSimulationGlobal false;
+			[
+				_crnrElNm,
+				-_stepSign*_wallStartOffset,
+				_wallStartOffset * (_j*2-1),
+				if (isNil "_crnrZOff") then {["REL", 0]} else {["CENTER", _crnrZOff]},
+				_dir
+			] call _placePrisonObj;
 		};
 		if (_i == 1 && _j == 1) then {
 			// wall with gates
@@ -151,21 +173,13 @@ for [{_i = 0}, {_i < 2}, {_i = _i + 1}] do {
 				if (_placeX > _critX) then {
 					_placeX = _critX;
 				};
-				_pos = _centerPos vectorAdd ([[0,0,0], [_placeX, _wallStartOffset, 0], _rotateDir] call a3e_fnc_RotatePosition);
-				_object = createVehicle [_wallElNm, _pos, [], 0, "CAN_COLLIDE"];
-				if (isNil "_wallZOff") then {
-					_z = getTerrainHeightASL _pos;
-				} else {
-					_z = _cpz+_wallZOff;
-				};
-				_pos set [2, _z];
-				_object setPosASL _pos;
-				if (_wallElLn == _wallElWd) then {
-					_object setDir (_dir + 90*floor(random(4)));
-				} else {
-					_object setDir _dir;
-				};
-				_object enableSimulationGlobal false;
+				[
+					_wallElNm,
+					_placeX,
+					_wallStartOffset,
+					if (isNil "_wallZOff") then {["REL", 0]} else {["CENTER", _wallZOff]},
+					if (_wallElLn == _wallElWd) then {_dir + 90*floor(random(4))} else {_dir}
+				] call _placePrisonObj;
 			};
 			// ... and after gate
 			_freeSpace = _wallStartOffset+_BIPillarOffset-((abs(_crnrElLn))+_gateElLn)/2 - _gateElLO;
@@ -185,143 +199,82 @@ for [{_i = 0}, {_i < 2}, {_i = _i + 1}] do {
 				if (_placeX < _critX) then {
 					_placeX = _critX;
 				};
-				_pos = _centerPos vectorAdd ([[0,0,0], [_placeX, _wallStartOffset, 0], _rotateDir] call a3e_fnc_RotatePosition);
-				_object = createVehicle [_wallElNm, _pos, [], 0, "CAN_COLLIDE"];
-				if (isNil "_wallZOff") then {
-					_z = getTerrainHeightASL _pos;
-				} else {
-					_z = _cpz+_wallZOff;
-				};
-				_pos set [2, _z];
-				_object setPosASL _pos;
-				if (_wallElLn == _wallElWd) then {
-					_object setDir (_dir + 90*floor(random(4)));
-				} else {
-					_object setDir _dir;
-				};
-				_object enableSimulationGlobal false;
+				[
+					_wallElNm,
+					_placeX,
+					_wallStartOffset,
+					if (isNil "_wallZOff") then {["REL", 0]} else {["CENTER", _wallZOff]},
+					if (_wallElLn == _wallElWd) then {_dir + 90*floor(random(4))} else {_dir}
+				] call _placePrisonObj;
 			};
 			// gate itself
 			// placing gate in the (offset'ed) middle of the side
-			_x = _BIPillarOffset + _gateElLO;
-			_y = _wallStartOffset + _gateElTO;
-			_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
-			_object = createVehicle [_gateElNm, _pos, [], 0, "CAN_COLLIDE"];
-			_z = getTerrainHeightASL _pos;
-			_pos set [2, _z];
-			_object setPosASL _pos;
-			_object setDir _dir;
-			A3E_PrisonGateObject = _object;
-			publicVariable "A3E_PrisonGateObject";
+			[
+				_gateElNm,
+				_BIPillarOffset + _gateElLO,
+				_wallStartOffset + _gateElTO,
+				["REL", 0], _dir, true, nil, nil, "A3E_PrisonGateObject"
+			] call _placePrisonObj;
 		} else {
 			for [{_k = 0}, {_k < _elems}, {_k = _k + 1}] do {
-				_x = (1-_i)* _wallStartOffset*(_j*2-1) + _stepSign*(  _i  *(-_wallStartOffset+_BIPillarOffset+(_crnrElLn+_wallElLn)/2 + _k*_wallElLn ));
-				_y =   _i  * _wallStartOffset*(_j*2-1) + _stepSign*((1-_i)*(-_wallStartOffset+_BIPillarOffset+(_crnrElLn+_wallElLn)/2 + _k*_wallElLn ));
-				_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
-				_object = createVehicle [_wallElNm, _pos, [], 0, "CAN_COLLIDE"];
-				if (isNil "_wallZOff") then {
-					_z = getTerrainHeightASL _pos;
-				} else {
-					_z = _cpz+_wallZOff;
-				};
-				_pos set [2, _z];
-				_object setPosASL _pos;
-				if (_wallElLn == _wallElWd) then {
-					_object setDir (_dir + 90*floor(random(4)));
-				} else {
-					_object setDir _dir;
-				};
-				_object enableSimulationGlobal false;
+				[
+					_wallElNm,
+					(1-_i)* _wallStartOffset*(_j*2-1) + _stepSign*(  _i  *(-_wallStartOffset+_BIPillarOffset+(_crnrElLn+_wallElLn)/2 + _k*_wallElLn )),
+					  _i  * _wallStartOffset*(_j*2-1) + _stepSign*((1-_i)*(-_wallStartOffset+_BIPillarOffset+(_crnrElLn+_wallElLn)/2 + _k*_wallElLn )),
+					if (isNil "_wallZOff") then {["REL", 0]} else {["CENTER", _wallZOff]},
+					if (_wallElLn == _wallElWd) then {_dir + 90*floor(random(4))} else {_dir}
+				] call _placePrisonObj;
 			};
 		};
 	};
 };
 
-// Burning barrel
-_x = -((_gateElLn)/2 + 1) + _gateElLO; // 1m to the left of gate
-_y = (_wallStartOffset+_wallElWd) + 1;// 1 m behind the wall
-_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
-_object = createVehicle ["MetalBarrel_burning_F", _pos, [], 0, "NONE"];
-_z = getTerrainHeightASL _pos;
-_pos set [2, _z];
-_object setPosASL _pos;
-
-// Loudspeakers
-_x = -(_wallStartOffset+_wallElWd) - 1; // 1m behind the wall by x coordinate
-_y = -(_wallStartOffset+_wallElWd) + 1; // 1 m before the wall, by y coordinate
-_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
-_object = createVehicle ["Land_Loudspeakers_F", _pos, [], 0, "CAN_COLLIDE"];
-_z = getTerrainHeightASL _pos;
-_pos set [2, _z];
-_object setPosASL _pos;
-
-A3E_PrisonLoudspeakerObject = _object;
-publicVariable "A3E_PrisonLoudspeakerObject";
-
-// Flag
-_x = _gateElLn/2 + 1 + _gateElLO; // 1m to the right of gate
-_y = _wallStartOffset+_wallElWd + 1; // 1 m behind the wall
-_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
-_object = createVehicle ["Flag_AAF_F", _pos, [], 0, "NONE"];
-_z = getTerrainHeightASL _pos;
-_pos set [2, _z];
-_object setPosASL _pos;
-
-// Graves
-_x = -_wallStartOffset+1.9;
-_y = -_wallStartOffset+1;
-_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
-_object = createVehicle ["Land_Grave_dirt_F", _pos, [], 0, "CAN_COLLIDE"];
-_z = getTerrainHeightASL _pos;
-_pos set [2, _z];
-_object setPosASL _pos;
-_object setDir (_rotateDir+180);
-_object enableSimulationGlobal false;
-
-_x = -_wallStartOffset+1.9;
-_y = -_wallStartOffset+2.5;
-_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
-_object = createVehicle ["Land_Grave_dirt_F", _pos, [], 0, "CAN_COLLIDE"];
-_z = getTerrainHeightASL _pos;
-_pos set [2, _z];
-_object setPosASL _pos;
-_object setDir (_rotateDir+180);
-_object enableSimulationGlobal false;
-
-// Shovel // Shovel is for grave digging only!
-_x = -_wallStartOffset+_wallElWd/2+0.15;
-_y = -_wallStartOffset+_wallElWd/2+0.15;
-_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
-_object = createVehicle ["Land_Shovel_F", _pos, [], 0, "CAN_COLLIDE"];
-_z = (getTerrainHeightASL _pos) + 0.42;
-_pos set [2, _z];
-_object setPosASL _pos;
-_object setDir _rotateDir+40;
-_object setVectorDirAndUp [[0,0,-1], [[0,0,0], [0, 1, 0], _rotateDir+40] call a3e_fnc_RotatePosition];
-_object enableSimulationGlobal false;
-
-// garbage
-_x = _wallStartOffset-_wallElWd-1.5;
-_y = _wallStartOffset-_wallElWd-1.5;
-_pos = _centerPos vectorAdd ([[0,0,0], [_x, _y, 0], _rotateDir] call a3e_fnc_RotatePosition);
-_object = createVehicle ["Land_Garbage_square3_F", _pos, [], 0, "CAN_COLLIDE"];
-_z = getTerrainHeightASL _pos;
-_pos set [2, _z];
-_object setPosASL _pos;
-_object setDir _rotateDir;
-_object enableSimulation false;
+// place various prison objects
+{_x call _placePrisonObj; true} count [
+	[
+		"MetalBarrel_burning_F",
+		-((_gateElLn)/2 + 1) + _gateElLO, // 1m to the left of gate
+		(_wallStartOffset+_wallElWd) + 1, // 1 m behind the wall
+		nil, 0, true, true
+	], [
+		"Land_Loudspeakers_F",
+		-(_wallStartOffset+_wallElWd) - 1, // 1m behind the wall by x coordinate
+		-(_wallStartOffset+_wallElWd) + 1, // 1 m before the wall, by y coordinate
+		nil, 0, false, nil, nil, "A3E_PrisonLoudspeakerObject"
+	], [
+		"Flag_AAF_F",
+		_gateElLn/2 + 1 + _gateElLO, // 1m to the right of gate
+		_wallStartOffset+_wallElWd + 1, // 1 m behind the wall
+		nil, 0, true
+	], [
+		"Land_Grave_dirt_F",
+		-_wallStartOffset+1.9,
+		-_wallStartOffset+1,
+		nil, 180, false, true
+	], [
+		"Land_Grave_dirt_F",
+		-_wallStartOffset+1.9,
+		-_wallStartOffset+2.5,
+		nil, 180, false, true
+	], [
+		"Land_Shovel_F",
+		-_wallStartOffset+_wallElWd/2+0.15,
+		-_wallStartOffset+_wallElWd/2+0.15,
+		["REL", 0.42], 40, false, false, [[0,0,-1], [0, 1, 0]]
+	], [
+		"Land_Garbage_square3_F",
+		_wallStartOffset-_wallElWd-1.5,
+		_wallStartOffset-_wallElWd-1.5,
+		nil, 0, false, true
+	]
+];
 
 // for placement debug purposes
 if (false) then {
 	private ["_i", "_k"];
 	for [{_i = floor(-_wallStartOffset)-2}, {_i <= ceil(_wallStartOffset)+2}, {_i = _i + 1}] do {
 		for [{_k = floor(-_wallStartOffset)-2}, {_k <= ceil(_wallStartOffset)+2}, {_k = _k + 1}] do {
-			_pos = _centerPos vectorAdd ([[0,0,0], [_i, _k, 0], _rotateDir] call a3e_fnc_RotatePosition);
-			_object = createVehicle ["Sign_Sphere10cm_F", _pos, [], 0, "CAN_COLLIDE"];
-			_z = getTerrainHeightASL _pos;
-			_pos set [2, _z];
-			_object setPosASL _pos;
-			// no setDir for sphere, hehe
+			["Sign_Sphere10cm_F", _i, _k] call _placePrisonObj;
 		};
 	};
 };

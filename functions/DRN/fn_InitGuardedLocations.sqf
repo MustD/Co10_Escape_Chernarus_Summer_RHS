@@ -75,10 +75,10 @@ while {_locationExists} do {
 	_locationPos = getMarkerPos _locationFullName;
 
 	_soldierCount = _minSoldierCount + floor (random (_maxSoldierCount - _minSoldierCount + 1));
-    
+
 	_soldiers = [];
 	for [{_i = 0}, {_i < _soldierCount}, {_i = _i + 1}] do {
-		_soldierType = _possibleInfantryTypes select (floor (random (count _possibleInfantryTypes)));
+		_soldierType = _possibleInfantryTypes call BIS_fnc_selectRandom;
 
 		// soldier: [type, skill, spawned, damage, obj, scriptHandle, hasScript]
 		_soldier = [_soldierType, (_minSkill + random (_maxSkill - _minSkill)), false, 0, objNull, objNull, false];
@@ -91,14 +91,14 @@ while {_locationExists} do {
 
     // Set ammo depot trigger
     private ["_marker", "_count", "_populated", "_trigger"];
-    
+
     _trigger = createTrigger["EmptyDetector", getMarkerPos _locationFullName];
     _trigger triggerAttachVehicle [vehicle (units _referenceGroup select 0)];
     _trigger setTriggerArea[_spawnRadius, _spawnRadius, 0, false];
     _trigger setTriggerActivation["MEMBER", "PRESENT", true];
     _trigger setTriggerTimeout [1, 1, 1, true];
     _trigger setTriggerStatements["this", "_nil = [a3e_var_guardedLocations" + str _instanceNo + " select " + str _locationNo + ", " + str _side + ", " + str _maxGroupsCount + ", " + str _debug + "] spawn drn_fnc_PopulateLocation;", "_nil = [a3e_var_guardedLocations" + str _instanceNo + " select " + str _locationNo + ", " + str _debug + "] spawn drn_fnc_DepopulateLocation;"];
-    
+
 	// Get next guarded position
 	_locationNo = _locationNo + 1;
 	_locationFullName = _locationMarkerName + str _locationNo;

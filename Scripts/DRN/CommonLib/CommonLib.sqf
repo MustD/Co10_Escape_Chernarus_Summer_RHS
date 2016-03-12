@@ -24,7 +24,7 @@ drn_fnc_CL_InitParams = {
     {
         private ["_c", "_i", "_paramName"];
         paramsArray=[];
-        
+
         if (isClass (missionConfigFile/"Params")) then
         {
             _c=count (missionConfigFile/"Params");
@@ -95,15 +95,15 @@ drn_fnc_CL_GetMarkerWithinRange = {
 		};
 
 		_markerNo = _markerNo + 1;
-		_markerName = _markerPreName + str _markerNo;		
+		_markerName = _markerPreName + str _markerNo;
 	};
 
 	if (count _markersWithinRange > 0) then {
-		_returnValue = _markersWithinRange select floor (random count _markersWithinRange);
+		_returnValue = _markersWithinRange call BIS_fnc_selectRandom;
 	}
 	else {
 		if (count _markersOutsideRange > 0) then {
-			_returnValue = _markersOutsideRange select floor (random count _markersOutsideRange);
+			_returnValue = _markersOutsideRange call BIS_fnc_selectRandom;
 		};
 	};
 
@@ -164,7 +164,7 @@ drn_fnc_CL_GetClosestMarker = {
 			_distance = (GetMarkerPos _markerName) distance _position;
 			if (_distance < _closestDistance) then {
 				_closestDistance = _distance;
-			};		
+			};
 		};
 	};
 
@@ -181,11 +181,11 @@ drn_fnc_CL_GetClosestMarker = {
 drn_fnc_CL_RotatePosition = {
     private ["_centerPos", "_pos", "_dir"];
     private ["_px", "_py", "_mpx", "_mpy", "_ma", "_rpx", "_rpy"];
-    
+
     _centerPos = _this select 0;
     _pos = _this select 1;
     _dir = _this select 2;
-    
+
     	_px = _pos select 0;
 	_py = _pos select 1;
 	_mpx = _centerPos select 0;
@@ -195,7 +195,7 @@ drn_fnc_CL_RotatePosition = {
 	//Now, rotate point
 	_rpx = ( (_px - _mpx) * cos(_ma) ) + ( (_py - _mpy) * sin(_ma) ) + _mpx;
 	_rpy = (-(_px - _mpx) * sin(_ma) ) + ( (_py - _mpy) * cos(_ma) ) + _mpy;
-    
+
     [_rpx, _rpy, 0]
 };
 
@@ -211,9 +211,9 @@ drn_fnc_CL_RotatePosition = {
 drn_fnc_CL_GetRandomMarkerPos = {
     private ["_markerName"];
     private ["_isInside", "_px", "_py", "_mpx", "_mpy", "_msx", "_msy", "_ma", "_rpx", "_rpy", "_i"];
-    
+
     _markerName = _this select 0;
-    
+
     _isInside = false;
     _i = 0;
     while {!_isInside} do {
@@ -222,14 +222,14 @@ drn_fnc_CL_GetRandomMarkerPos = {
         _msx = (getMarkerSize _markerName) select 0;
         _msy = (getMarkerSize _markerName) select 1;
         _ma = (markerDir _markerName);
-        
+
         _px = _mpx -_msx + random (_msx * 2);
         _py = _mpy -_msy + random (_msy * 2);
-        
+
         //Now, rotate point as marker is rotated
         _rpx = ( (_px - _mpx) * cos(_ma) ) + ( (_py - _mpy) * sin(_ma) ) + _mpx;
         _rpy = (-(_px - _mpx) * sin(_ma) ) + ( (_py - _mpy) * cos(_ma) ) + _mpy;
-        
+
         if ([[_rpx, _rpy, 0], _markerName] call drn_fnc_CL_PositionIsInsideMarker) then {
             _isInside = true;
         };
@@ -240,7 +240,7 @@ drn_fnc_CL_GetRandomMarkerPos = {
             _rpy = 0;
         };
     };
-    
+
     [_rpx, _rpy, 0]
 };
 
@@ -287,7 +287,7 @@ drn_fnc_CL_PositionIsInsideMarker = {
             _isInside = true;
         };
     };
-    
+
     if (markerShape _markerName == "ELLIPSE") then {
         _res = (((_rpx-_mpx)^2)/(_msx^2)) + (((_rpy-_mpy)^2)/(_msy^2));
         if ( _res < 1 ) then
@@ -313,11 +313,11 @@ drn_CL_ShowCommandTextEventArgs = []; // [unit, text]
 drn_fnc_CL_ShowCommandTextLocal = {
     private ["_text"];
     _text = _this select 0;
-    
+
     if (!isNull player) then {
         player globalChat _text;
     };
-    
+
     diag_log ("Title text: " + _text);
 };
 
@@ -329,7 +329,7 @@ drn_fnc_CL_ShowCommandTextLocal = {
 drn_fnc_CL_ShowCommandTextAllClients = {
     private ["_text"];
     _text = _this select 0;
-    
+
     drn_CL_ShowCommandTextEventArgs = [_text];
     publicVariable "drn_CL_ShowCommandTextEventArgs";
     drn_CL_ShowCommandTextEventArgs call drn_fnc_CL_ShowCommandTextLocal;
@@ -351,7 +351,7 @@ drn_fnc_CL_ShowTitleTextLocal = {
     private ["_text", "_showAsSubTitle"];
     _text = _this select 0;
     if (count _this > 1) then {_showAsSubTitle = _this select 1;} else {_showAsSubTitle = false};
-    
+
     if (!isNull player) then {
         if (_showAsSubTitle) then {
             titleText [_text, "PLAIN DOWN"];
@@ -360,7 +360,7 @@ drn_fnc_CL_ShowTitleTextLocal = {
             titleText [_text, "PLAIN"];
         };
     };
-    
+
     diag_log ("Title text: " + _text);
 };
 
@@ -374,7 +374,7 @@ drn_fnc_CL_ShowTitleTextAllClients = {
     private ["_text", "_showAsSubTitle"];
     _text = _this select 0;
     if (count _this > 1) then {_showAsSubTitle = _this select 1;} else {_showAsSubTitle = false};
-    
+
     drn_CL_ShowTitleTextEventArgs = [_text, _showAsSubTitle];
     publicVariable "drn_CL_ShowTitleTextEventArgs";
     drn_CL_ShowTitleTextEventArgs call drn_fnc_CL_ShowTitleTextLocal;
@@ -384,12 +384,12 @@ drn_CL_AddScoreEventArgs = []; // [vehicleVarName, score]
 
 "drn_CL_AddScoreEventArgs" addPublicVariableEventHandler {
     if (isServer) then {
-        drn_CL_AddScoreEventArgs call drn_fnc_CL_AddScoreServer; 
+        drn_CL_AddScoreEventArgs call drn_fnc_CL_AddScoreServer;
     };
 };
 
 drn_fnc_CL_AddScoreServer = {
-    drn_CL_AddScoreEventArgs call compile format ["%1 addScore %2;", drn_CL_AddScoreEventArgs select 0, drn_CL_AddScoreEventArgs select 1]; 
+    drn_CL_AddScoreEventArgs call compile format ["%1 addScore %2;", drn_CL_AddScoreEventArgs select 0, drn_CL_AddScoreEventArgs select 1];
 };
 
 /*
@@ -401,13 +401,13 @@ drn_fnc_CL_AddScoreServer = {
 drn_fnc_CL_AddScore = {
     private ["_unit", "_score"];
     private ["_vehicleVarName"];
-    
+
     _unit = _this select 0;
-    _score = _this select 1;    
-    
+    _score = _this select 1;
+
     _vehicleVarName = vehicleVarName _unit;
     drn_CL_AddScoreEventArgs = [_vehicleVarName, _score];
-    
+
     if (isServer) then {
         drn_CL_AddScoreEventArgs call drn_fnc_CL_AddScoreServer;
     }
@@ -424,11 +424,11 @@ drn_fnc_CL_AddScore = {
 drn_fnc_CL_AddUnitsToGarbageCollector = {
     private ["_units"];
     _units = _this;
-    
+
     /*if (isNil "a3e_var_CL_GarbageCollectorUnits") then {
         a3e_var_CL_GarbageCollectorUnits = [];
     };
-    
+
     a3e_var_CL_GarbageCollectorUnits = a3e_var_CL_GarbageCollectorUnits + _units;*/
 };
 
@@ -444,36 +444,36 @@ drn_fnc_CL_AddUnitsToGarbageCollector = {
 drn_fnc_CL_RunGarbageCollector = {
     private ["_referenceGroup", "_cleanUpDistance"];
     private ["_emptyGroups", "_groupsToDelete", "_unitsToDelete"];
-    
+
     _referenceGroup = _this select 0;
     if (count _this > 1) then {_cleanUpDistance = _this select 1;} else {_cleanUpDistance = 750};
-    
+
     if (A3E_Debug) then {
         ["Garbage collector started."] call drn_fnc_CL_ShowDebugTextAllClients;
     };
-    
+
     if (isNil "a3e_var_CL_GarbageCollectorUnits") then {
         a3e_var_CL_GarbageCollectorUnits = [];
     };
-    
+
     _emptyGroups = [];
-    
+
     while {true} do {
-        
+
         // Find empty groups
         {
             if (count units _x <= 0) then {
                 _emptyGroups set [count _emptyGroups, _x];
             };
-        } foreach allGroups;        
-        
+        } foreach allGroups;
+
         if (A3E_Debug) then {
             sleep 1;
         }
         else {
             sleep 10;
         };
-        
+
         // Delete empty groups if they are still empty
         _groupsToDelete = [];
         {
@@ -481,55 +481,55 @@ drn_fnc_CL_RunGarbageCollector = {
                 _groupsToDelete set [count _groupsToDelete, _x];
             };
         } foreach _emptyGroups;
-        
+
         _emptyGroups = _emptyGroups - _groupsToDelete;
-        
+
         // Delete the groups
         {
             if (A3E_Debug) then {
                 ["Group '" + str _x + "' garbage collected."] call drn_fnc_CL_ShowDebugTextAllClients;
             };
-            
+
             deleteGroup _x;
         } foreach _groupsToDelete;
-        
+
        /* // Delete units that are far away
         _unitsToDelete = [];
         {
             private ["_unit", "_farAway"];
-            
+
             _unit = _x;
             _farAway = true;
-            
+
             {
                 if (_x distance _unit < _cleanUpDistance) then {
                     _farAway = false;
                 };
             } foreach units _referenceGroup;
-            
+
             if (_farAway) then {
                 _unitsToDelete set [count _unitsToDelete, _unit];
             };
         } foreach a3e_var_CL_GarbageCollectorUnits;
-        
+
         a3e_var_CL_GarbageCollectorUnits = a3e_var_CL_GarbageCollectorUnits - _unitsToDelete;
-        
+
         {
             private ["_group"];
-            
+
             _group = group _x;
-            
+
             if (A3E_Debug) then {
                 ["Unit '" + str _x + "' garbage collected."] call drn_fnc_CL_ShowDebugTextAllClients;
             };
             deleteVehicle _x;
-            
+
             if (str _group != "<NULL-group>") then {
                 if (count units _group == 0) then {
                     if (A3E_Debug) then {
                         ["Group '" + str _group + "' garbage collected."] call drn_fnc_CL_ShowDebugTextAllClients;
                     };
-                    
+
                     deleteGroup _group;
                 };
             };
@@ -565,13 +565,13 @@ drn_CL_DeleteDebugMarkerEventArgs = [];  // [name]
  */
 drn_fnc_CL_ShowDebugTextLocal = {
     private ["_minutes", "_seconds"];
-    
+
     if (!isNull player) then {
         if (!a3e_var_CL_SilentDebugMode) then {
             player sideChat (_this select 0);
         };
     };
-    
+
     _minutes = floor (time / 60);
     _seconds = floor (time - (_minutes * 60));
     diag_log ((str _minutes + ":" + str _seconds) + " Debug: " + (_this select 0));
@@ -619,7 +619,7 @@ drn_fnc_CL_SetDebugMarkerLocal = {
             _position = _this select 1;
             _markerColor = "Default";
             _markerText = "";
-            
+
             if (count _this == 6) then {
                 _size = _this select 2;
                 _direction = _this select 3;
@@ -648,18 +648,18 @@ drn_fnc_CL_SetDebugMarkerLocal = {
                 _markerColor = _this select 3;
                 _markerText = _this select 4;
             };
-            
+
             // Delete old marker
             if ([_markerName] call drn_fnc_CL_MarkerExists) then {
                 deleteMarkerLocal _markerName;
             };
-            
+
             // Set new marker
             _marker = createMarkerLocal [_markerName, _position];
             _marker setMarkerShapeLocal _shape;
             _marker setMarkerColorLocal _markerColor;
             _marker setMarkerTextLocal _markerText;
-            
+
             if (count _this == 6 || count _this == 7) then {
                 _marker setMarkerSizeLocal _size;
                 _marker setMarkerDirLocal _direction;

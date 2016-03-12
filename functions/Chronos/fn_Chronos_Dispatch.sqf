@@ -1,12 +1,6 @@
-private["_process","_function","_callType","_timeout","_handle","_return"];
+params ["_process", "_index"];
+private["_function","_callType","_timeout","_handle","_return"];
 private["_lastCall","_time"];
-//if (requiredVersion "1.48") then {
-//	_process = param[0];
-//	_index = param[1];
-//} else {
-	_process = [_this, 0] call BIS_fnc_param;
-	_index = [_this, 0] call BIS_fnc_param;
-//};
 
 _function = _process select 0;
 _callType = _process select 1;

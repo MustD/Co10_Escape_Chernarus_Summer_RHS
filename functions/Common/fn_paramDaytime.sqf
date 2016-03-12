@@ -11,10 +11,7 @@
 	Returns:
 	ARRAY - date
 */
-
-private ["_hour","_date"];
-_hour = [_this,0,daytime,[0]] call bis_fnc_param;
-_date = date;
+params [["_hour", daytime,[0]], ["_date", date, [[]], [3,4,5]]];
 if(_hour==24) then {
 	_hour = round(random(24));
 };

@@ -9,7 +9,7 @@
 
 
     if(count(_referenceUnits)>0) then {
-	    _referenceUnit = _referenceUnits select floor random count _referenceUnits;
+	    _referenceUnit = _referenceUnits call BIS_fnc_selectRandom;
 
 	    _posOk = false;
 	    while {!_posOk} do {

@@ -44,7 +44,7 @@
 					delayPerRound: delay required to insert ammo into magazine
 					delayPerRoundUnload: delay required to remove ammo from magazine (performed on some mag before inserting to another)
 					delayPerMag: delay performed on emptying or filling magazine
-			You can pass empty array ot nil to immediatelly repack magazines without  animation (e.g. for crates).
+			You can pass empty array or nil to immediatelly repack magazines without  animation (e.g. for crates).
 
 	@example
 	pdth_mr_has_repack = compile preprocessFileLineNumbers "pdth\mr\has_repack.sqf";
@@ -80,27 +80,30 @@
 **/
 private ["_fnc_setUp_WH"];
 _fnc_setUp_WH = {
-	private ["_ref", "_ret"];
-	_ref = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
+	params [["_ref", objNull, [objNull]]];
+	private ["_ret"];
 	_ret = objNull;
 	if (!(isNull _ref)) then {
 		private ["_refBox", "_whPos"];
 		_refBox = boundingBoxReal _ref;
-		_whPos = _ref modelToWorld [0, (_refBox select 1) select 1, 0];
-		_whPos set [2, 0];
+		_whPos = _ref modelToWorld [0, ((_refBox select 1) select 1)-0.2, 0];
+		_z = (getPosATL _ref) select 2;
+		if (abs(_z) < 0.5) then {
+			_whPos set [2, 0];
+		};
 		_ret = createVehicle ["GroundWeaponHolder", _whPos, [], 0, "CAN_COLLIDE"];
 		_ret setDir (45 + direction _ref);
-		_ret setVectorUp (surfaceNormal _whPos);
+		if (abs(_z) < 0.5) then {
+			_ret setVectorUp (surfaceNormal _whPos);
+		};
 	};
 	_ret
 };
 
-private ["_target", "_caller", "_nnT", "_nnC", "_isManT", "_isManC", "_onFootC", "_plC", "_args", "_stopVars", "_haveSV", "_localT", "_localC"];
-_target = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
-_caller = [_this, 1, objNull, [objNull]] call BIS_fnc_param;
-_args = [_this, 3, [], [[]]] call BIS_fnc_param;
+params [["_target", objNull, [objNull]], ["_caller", objNull, [objNull]], ["_args", [], [[]]]];
+private ["_nnT", "_nnC", "_isManT", "_isManC", "_onFootC", "_plC", "_stopVars", "_haveSV", "_localT", "_localC"];
 // ensure we work with local copy and don't expose local _caller
-_stopVars = [[_args, 1, [], [[]]] call BIS_fnc_param, [["_caller", _caller]]] call pdth_mr_deep_copy_w_replace;
+_stopVars = [_args param [1, [], [[]]], [["_caller", _caller]]] call pdth_mr_deep_copy_w_replace;
 _haveSV = ([[ "pdth_mr_repack_runs", [true], [_target, _caller]]] call pdth_mr_check_stop_vars) || (_stopVars call pdth_mr_check_stop_vars);
 _nnT = (!(isNull _target));
 _nnC = (!(isNull _caller));
@@ -408,7 +411,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 										deleteVehicle _gwhDisp;
 									};
 									_gwhDisp = [_target] call _fnc_setUp_WH;
-									[[_gwhDisp, false], "enableSimulationGlobal", false] call BIS_fnc_MP;
+									[_gwhDisp, false] remoteExec ["enableSimulationGlobal", 2];
 									if (!(isNull _gwhDisp)) then {
 										for [{_i=_iPut}, {_i <= _iTake}, {_i = _i + 1}] do {
 											_gwhDisp addMagazineAmmoCargo [_clName, 1, (_mCounts select _i) select 1];
@@ -579,7 +582,7 @@ if ((!_haveSV) || (_plC && (!alive _caller))) then {
 				};
 				if (!(isNull _gwhDisp)) then {
 					if (_plC && (!alive _caller)) then {
-						[[_gwhDisp, true], "enableSimulationGlobal", false] call BIS_fnc_MP;
+						[_gwhDisp, true] remoteExec ["enableSimulationGlobal", 2];
 						_gwhDisp setDamage 0;
 					} else {
 						deleteVehicle _gwhDisp;

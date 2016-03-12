@@ -20,7 +20,7 @@ while {surfaceIsWater [_destinationPos select 0, _destinationPos select 1]} do {
 };
 
 _waypointFormations = ["COLUMN", "STAG COLUMN", "FILE", "DIAMOND"];
-_formation = _waypointFormations select (floor random count _waypointFormations);
+_formation = _waypointFormations call BIS_fnc_selectRandom;
 
 _waypoint = _group addWaypoint [_destinationPos, 0];
 _waypoint setWaypointBehaviour "SAFE";

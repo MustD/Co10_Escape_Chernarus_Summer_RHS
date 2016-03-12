@@ -1,7 +1,6 @@
 AT_FNC_Revive_InitPlayer = {
-	private["_init","_anotherPlayer", "_corpse"];
-	_init = _this select 0;
-	_corpse = _this select 1;
+	params [["_init", false, [false]], ["_corpse", objNull, [objNull]]];
+	private ["_anotherPlayer"];
 	player removeAllEventHandlers "HandleDamage";
 	player removeAllEventHandlers "Killed";
 
@@ -14,11 +13,10 @@ AT_FNC_Revive_InitPlayer = {
 	[
 		"Killed",
 		{
-			_body = _this select 0;
+			params ["_body"];
 			[_body] spawn
 			{
-				waitUntil { alive player };
-				_body = _this select 0;
+				params ["_body"];
 				waitUntil { alive player && (!(_body in AT_Revive_HoldFromDelete)) };
 				deleteVehicle _body;
 			}
@@ -157,7 +155,7 @@ AT_FNC_Revive_Unconscious =
 	_unit setVariable ["AT_Revive_isUnconscious", true, true];
 
 	_msg = format["%1 is unconscious.",name _unit];
-	[[_msg],"AT_FNC_Revive_GlobalMsg",true] call bis_fnc_MP;
+	[_msg] remoteExec ["AT_FNC_Revive_GlobalMsg",0];
 
 
 	// Eject unit if inside vehicle
@@ -185,10 +183,11 @@ AT_FNC_Revive_Unconscious =
 	};
 
 	// deal with dropping weapon on respawn
-	private ["_prim", "_sec", "_hand", "_weapItems", "_pSet", "_sSet", "_hSet"];
+	private ["_prim", "_sec", "_hand", "_bino", "_weapItems", "_pSet", "_sSet", "_hSet", "_bSet"];
 	_prim = primaryWeapon _unit;
 	_sec = secondaryWeapon _unit;
 	_hand = handgunWeapon _unit;
+	_bino = binocular _unit;
 	_pSet = (_prim == "");
 	if (_pSet) then {
 		_unit setVariable ["AT_Revive_primaryWeapon", nil];
@@ -201,6 +200,10 @@ AT_FNC_Revive_Unconscious =
 	if (_hSet) then {
 		_unit setVariable ["AT_Revive_handgunWeapon", nil];
 	};
+	_bSet = (_bino == "");
+	if (_bSet) then {
+		_unit setVariable ["AT_Revive_binocular", nil];
+	};
 	_weapItems = weaponsItems _unit;
 	scopeName "_AT_FNC_Revive_Unconscious";
 	if (!(_pSet && _sSet && _hSet)) then {
@@ -208,21 +211,28 @@ AT_FNC_Revive_Unconscious =
 			if ((!_pSet) && (_prim == (_x select 0))) then {
 				_unit setVariable ["AT_Revive_primaryWeapon", _x];
 				_pSet = true;
-				if (_sSet && _hSet) then {
+				if (_sSet && _hSet && _bSet) then {
 					breakTo "_AT_FNC_Revive_Unconscious";
 				};
 			};
 			if ((!_sSet) && (_sec == (_x select 0))) then {
 				_unit setVariable ["AT_Revive_secondaryWeapon", _x];
 				_sSet = true;
-				if (_pSet && _hSet) then {
+				if (_pSet && _hSet && _bSet) then {
 					breakTo "_AT_FNC_Revive_Unconscious";
 				};
 			};
 			if ((!_hSet) && (_hand == (_x select 0))) then {
 				_unit setVariable ["AT_Revive_handgunWeapon", _x];
 				_hSet = true;
-				if (_pSet && _sSet) then {
+				if (_pSet && _sSet && _bSet) then {
+					breakTo "_AT_FNC_Revive_Unconscious";
+				};
+			};
+			if ((!_bSet) && (_bino == (_x select 0))) then {
+				_unit setVariable ["AT_Revive_binocular", _x];
+				_bSet = true;
+				if (_hSet && _pSet && _sSet) then {
 					breakTo "_AT_FNC_Revive_Unconscious";
 				};
 			};
@@ -255,7 +265,7 @@ AT_FNC_Revive_Unconscious =
 	sleep 0.5;
 
 	if(vehicle _unit == _unit) then {
-		[[_unit,"AinjPpneMstpSnonWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
+		[_unit,"AinjPpneMstpSnonWrflDnon"] remoteExec ["at_fnc_revive_switchMove", 0];
 	};
 	_unit enableSimulation false;
 
@@ -308,15 +318,15 @@ AT_FNC_Revive_Unconscious =
 };
 
 AT_FNC_Revive_SwitchVehicleDeadAnimation = {
+	params ["_unit"];
 	private["_interpolates"];
-	_unit = [_this, 0] call BIS_fnc_param;
 	if(vehicle _unit != _unit) then {
 		_interpolates = [(configfile >> "CfgMovesMaleSdr" >> "States" >> animationState _unit),"interpolateTo",""] call BIS_fnc_returnConfigEntry;
 		{
 			if(typeName _x == "STRING") then {
 				private["_stateAction"];
 				if(configName (inheritsFrom (configfile >> "CfgMovesMaleSdr" >> "States" >> _x)) == "DefaultDie") then {
-					[[_unit,_x],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
+					[_unit,_x] remoteExec ["at_fnc_revive_switchMove", 0];
 				};
 			};
 		} foreach _interpolates;
@@ -324,22 +334,20 @@ AT_FNC_Revive_SwitchVehicleDeadAnimation = {
 };
 
 AT_FNC_Revive_WatchVehicle = {
+	params ["_vehicle", "", "_unit"];
 	private["_hnd"];
-	_vehicle = [_this, 0] call BIS_fnc_param;
-	_unit = [_this, 2] call BIS_fnc_param;
 	if(local _unit && (_unit getVariable ["AT_Revive_isUnconscious",false])) then {
 		_hnd = [_unit] spawn at_fnc_revive_ragdoll;
 		waituntil{scriptDone _hnd};
 		sleep 0.5;
-		[[_unit,"AinjPpneMstpSnonWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
+		[_unit,"AinjPpneMstpSnonWrflDnon"] remoteExec ["at_fnc_revive_switchMove", 0];
 	};
 };
 
 AT_FNC_Revive_HandleRevive =
 {
+	params [["_target", objNull, [objNull]], ["_fakUsed", false, [false]]];
 	private["_attendant"];
-	_target = [_this, 0, objNull] call BIS_fnc_param;
-	_fakUsed = [_this, 1, false] call BIS_fnc_param;
 
 	if (alive _target) then
 	{
@@ -355,10 +363,10 @@ AT_FNC_Revive_HandleRevive =
 
 		if(!(player getVariable ["AT_Revive_isUnconscious",false])) then {
 			_target setVariable ["AT_Revive_isUnconscious", false, true];
-			[[_target,"amovppnemstpsraswrfldnon"],"at_fnc_revive_playMove",true] call BIS_fnc_MP;
+			[_target,"amovppnemstpsraswrfldnon"] remoteExec ["at_fnc_revive_playMove", 0];
 
 			if(AT_Revive_Camera==1) then {
-				[[],"ATHSC_fnc_exit",_target] call BIS_fnc_MP;
+				[] remoteExec ["ATHSC_fnc_exit", _target];
 			};
 
 		};
@@ -368,7 +376,7 @@ AT_FNC_Revive_HandleRevive =
 			_target enableSimulation true;
 			_target allowDamage true;
 			_target setCaptive false;
-			[[_target,"amovppnemstpsraswrfldnon"],"at_fnc_revive_playMove",true] call BIS_fnc_MP;
+			[_target,"amovppnemstpsraswrfldnon"] remoteExec ["at_fnc_revive_playMove", 0];
 		};
 
 		_attendant = [(configfile >> "CfgVehicles" >> typeof player),"attendant",0] call BIS_fnc_returnConfigEntry;
@@ -397,7 +405,7 @@ AT_FNC_Revive_InstantRevive =
 	_target setVariable ["AT_Revive_isUnconscious", false, true];
 	_target setVariable ["AT_Revive_isDragged", objNull, true];
 	_target setVariable ["AT_Revive_isDragging",objNull,true];
-	[[_target,""],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
+	[_target,""] remoteExec ["at_fnc_revive_switchMove", 0];
 };
 
 AT_FNC_Revive_Drag =
@@ -413,17 +421,10 @@ AT_FNC_Revive_Drag =
 
 	_target attachTo [player, [0, 1.1, 0.092]];
 	_target setDir 180;
-
-	[[_target],"AT_FNC_Revive_FixRotation",true] call BIS_fnc_MP;
-
-	[[player,"AcinPknlMstpSrasWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
-
-	//player playMoveNow "AcinPknlMstpSrasWrflDnon";
-
-
+	[_target] remoteExec ["AT_FNC_Revive_FixRotation", 0];
+	[player,"AcinPknlMstpSrasWrflDnon"] remoteExec ["at_fnc_revive_switchMove", 0];
 
 	_id = player addAction ["<t color=""#FFA500"">" + "Release" + "</t>", "Revive\reviveAction.sqf", ["release"], 10, true, true, "", "true"];
-
 
 	waitUntil
 	{
@@ -434,7 +435,7 @@ AT_FNC_Revive_Drag =
 
 	if (!isNull _target && alive _target) then
 	{
-		[[_target,"AinjPpneMstpSnonWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
+		[_target,"AinjPpneMstpSnonWrflDnon"] remoteExec ["at_fnc_revive_switchMove", 0];
 		_target setVariable ["AT_Revive_isDragged", objNull, true];
 		detach _target;
 	};
@@ -444,13 +445,12 @@ AT_FNC_Revive_Drag =
 
 AT_FNC_Revive_Release =
 {
-
-	[[player,"amovpknlmstpsraswrfldnon"],"at_fnc_revive_playMove",true] call BIS_fnc_MP;
+	[player,"amovpknlmstpsraswrfldnon"] remoteExec ["at_fnc_revive_playMove", 0];
 	player setVariable ["AT_Revive_isDragging",objNull,true];
-
 };
+
 AT_FNC_Revive_AddVehicleWatchdog = {
-	_vehicle = [_this, 0] call BIS_fnc_param;
+	params ["_vehicle"];
 	_EH = _vehicle getvariable ["AT_Revive_VehicleWatchdog",-1];
 	if(_EH>=0) then {
 		_EH = _vehicle addEventHandler ["GetOut", {_this spawn AT_FNC_Revive_WatchVehicle;}];
@@ -555,16 +555,12 @@ AT_FNC_Revive_PutInVehicle = {
 	if(_freeCargoPositions>0 && !isNull(_isDragging)) then {
 		[] call AT_FNC_Revive_Release;
 		sleep 0.5;
-		// requires A3 v1.50
-		//[_isDragging,_vehicle] remoteExec ["AT_FNC_Revive_MoveInjuredInVehicle", _isDragging];
-		//[_vehicle] remoteExec ["AT_FNC_Revive_AddVehicleWatchdog", 0];
-		[[_isDragging,_vehicle], "AT_FNC_Revive_MoveInjuredInVehicle", _isDragging] call BIS_fnc_MP;
-		[[_vehicle], "AT_FNC_Revive_AddVehicleWatchdog", 0] call BIS_fnc_MP;
+		[_isDragging,_vehicle] remoteExec ["AT_FNC_Revive_MoveInjuredInVehicle", _isDragging];
+		[_vehicle] remoteExec ["AT_FNC_Revive_AddVehicleWatchdog", 0];
 	};
 };
 AT_FNC_Revive_MoveInjuredInVehicle = {
-	_injured = [_this, 0] call BIS_fnc_param;
-	_vehicle = [_this, 1] call BIS_fnc_param;
+	params ["_injured", "_vehicle"];
 	_injured moveInCargo _vehicle;
 };
 AT_FNC_Revive_PullPutVehicle = {
@@ -583,7 +579,7 @@ AT_FNC_Revive_Ragdoll = {
 
 	if(((eyepos _unit) select 2)>0.4) then {
 		_group = createGroup (side _unit);
-		[[_unit,true],"at_fnc_revive_hide",true] call BIS_fnc_MP;
+		[_unit,true] remoteExec ["at_fnc_revive_hide", 0];
 		_dummy = _group createUnit [typeof _unit, [0,0,0], [], 0, "FORM"];
 		if(!isNull _dummy) then {
 			_dummy setPosASL getPosASL _unit;
@@ -595,7 +591,7 @@ AT_FNC_Revive_Ragdoll = {
 			};
 			AT_Revive_HoldFromDelete pushBack _dummy;
 			[_dummy,_unit, true, true, false] spawn at_fnc_copyGear;
-			[[_dummy,_state],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
+			[_dummy,_state] remoteExec ["at_fnc_revive_switchMove", 0];
 			_dummy setDamage 1;
 			if(_unit==player) then {
 				_dummy switchCamera "Internal";
@@ -608,8 +604,8 @@ AT_FNC_Revive_Ragdoll = {
 				sleep 0.1;
 			};
 
-			[[_unit,false],"at_fnc_revive_hide",true] call BIS_fnc_MP;
-			[[_unit,"AinjPpneMstpSnonWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
+			[_unit,false] remoteExec ["at_fnc_revive_hide", 0];
+			[_unit,"AinjPpneMstpSnonWrflDnon"] remoteExec ["at_fnc_revive_switchMove", 0];
 			player switchCamera "Internal";
 			_dummy setPos [0,0,0];
 			_dummy spawn {
@@ -617,10 +613,10 @@ AT_FNC_Revive_Ragdoll = {
 				deleteVehicle _this;
 			};
 		} else {
-			[[_unit,"AinjPpneMstpSnonWrflDnon"],"at_fnc_revive_switchMove",true] call BIS_fnc_MP;
+			[_unit,"AinjPpneMstpSnonWrflDnon"] remoteExec ["at_fnc_revive_switchMove", 0];
 		};
 	} else {
-		[[_unit,"AinjPpneMstpSnonWrflDnon_rolltoback"],"at_fnc_revive_playMove",true] call BIS_fnc_MP;
+		[_unit,"AinjPpneMstpSnonWrflDnon_rolltoback"] remoteExec ["at_fnc_revive_playMove", 0];
 	};
 };
 
@@ -652,13 +648,7 @@ PDTH_FNC_CopyTypedCargo = {
 				This is also the reason why weapon-typed call is performed after (4>2>1) others when clear=true and spawn=false.
 	*/
 	private ["_contDest", "_contSrc", "_types", "_clear", "_global", "_spawn", "_keepAmmoCount", "_arr", "_subArr", "_i"];
-	_contDest = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
-	_contSrc = [_this, 1, objNull, [objNull]] call BIS_fnc_param;
-	_types = [_this, 2, 7, [0]] call BIS_fnc_param;
-	_keepAmmoCount = [_this, 3, false, [true]] call BIS_fnc_param;
-	_clear = [_this, 4, false, [true]] call BIS_fnc_param;
-	_global = [_this, 5, true, [true]] call BIS_fnc_param;
-	_spawn = [_this, 6, false, [true]] call BIS_fnc_param;
+	params [["_contDest", objNull, [objNull]], ["_contSrc", objNull, [objNull]], ["_types", 7, [0]], ["_keepAmmoCount", false, [false]], ["_clear", false, [false]], ["_global", true, [false]], ["_spawn", false, [false]]];
 	if (_clear) then {
 		_spawn = false;
 	};
@@ -788,13 +778,8 @@ PDTH_FNC_CopyTypedCargo = {
 };
 
 AT_FNC_CopyGear = {
-	private["_u1","_u2", "_d1", "_d2","_weapons","_assigned_items","_primary", "_secondary", "_handgun", "_addedP", "_addedS", "_addedH","_wName","_i","_keep_ammocount", "_iCount", "_var", "_storedWeaps"];
-
-	_u1 = [_this,0,objNull,[objNull]] call bis_fnc_param;
-	_u2 = [_this,1,objNull,[objNull]] call bis_fnc_param;
-	_keep_ammocount = [_this,2,false,[true]] call bis_fnc_param;
-	_d1 = [_this,3,true,[true]] call bis_fnc_param;
-	_d2 = [_this,4,true,[true]] call bis_fnc_param;
+	params [["_u1", objNull,[objNull]], ["_u2", objNull,[objNull]], ["_keep_ammocount", false,[true]], ["_d1", true,[true]], ["_d2", true,[true]]];
+	private["_weapons","_assigned_items","_primary", "_secondary", "_handgun", "_bino", "_addedP", "_addedS", "_addedH", "_addedB", "_wName","_i","_iCount", "_var", "_storedWeaps"];
 
 	if (isNull _u1) exitwith {
 		["Missing first parameter for gear copy!"] call BIS_fnc_error;
@@ -806,9 +791,11 @@ AT_FNC_CopyGear = {
 	_secondary = secondaryWeapon _u2;
 	_handgun = handgunWeapon _u2;
 	_weapons = weaponsItems _u2;
+	_bino = binocular _u2;
 	_addedP = (_primary == "");
 	_addedS = (_secondary == "");
 	_addedH = (_handgun == "");
+	_addedB = (_bino == "");
 	_storedWeaps = [];
 	if (_addedP) then {
 		_var = _u2 getVariable "AT_Revive_primaryWeapon";
@@ -834,6 +821,15 @@ AT_FNC_CopyGear = {
 			_storedWeaps pushBack _var;
 			_handgun = _var select 0;
 			_addedH = false;
+		};
+		_var = nil;
+	};
+	if (_addedB) then {
+		_var = _u2 getVariable "AT_Revive_binocular";
+		if (!(isNil "_var")) then {
+			_storedWeaps pushBack _var;
+			_bino = _var select 0;
+			_addedB = false;
 		};
 		_var = nil;
 	};
@@ -871,9 +867,8 @@ AT_FNC_CopyGear = {
 
 	// adding weapons stored in uniform, vest and backpack containers
 	{
-		private ["_dstCont", "_srcCont", "_weapList"];
-		_dstCont = [_x, 0, objNull, [objNull]] call BIS_fnc_param;
-		_srcCont = [_x, 1, objNull, [objNull]] call BIS_fnc_param;
+		_x params [["_dstCont", objNull, [objNull]], ["_srcCont", objNull, [objNull]]];
+		private "_weapList";
 		if (!(isNull _dstCont || isNull _srcCont)) then {
 			_weapList = weaponsItemsCargo _srcCont;
 			{
@@ -895,7 +890,7 @@ AT_FNC_CopyGear = {
 	];
 
 	scopeName "_AT_FNC_CopyGear";
-	if (!(_addedS && _addedP && _addedH)) then {
+	if (!(_addedS && _addedP && _addedH && _addedB)) then {
 		{ // foreach _weapons;
 			private ["_itms", "_baseWeap"];
 			_itms = _x;
@@ -910,7 +905,7 @@ AT_FNC_CopyGear = {
 							_u1 addWeaponItem [_baseWeap, _itms select _i];
 						};
 						_addedP = true;
-						if (_addedH && _addedS) then {
+						if (_addedH && _addedS && _addedB) then {
 							breakTo "_AT_FNC_CopyGear";
 						};
 					};
@@ -922,7 +917,7 @@ AT_FNC_CopyGear = {
 							_u1 addWeaponItem [_baseWeap, _itms select _i];
 						};
 						_addedS = true;
-						if (_addedH && _addedP) then {
+						if (_addedH && _addedP && _addedB) then {
 							breakTo "_AT_FNC_CopyGear";
 						};
 					};
@@ -934,7 +929,19 @@ AT_FNC_CopyGear = {
 							_u1 addWeaponItem [_baseWeap, _itms select _i];
 						};
 						_addedH = true;
-						if (_addedS && _addedP) then {
+						if (_addedS && _addedP && _addedB) then {
+							breakTo "_AT_FNC_CopyGear";
+						};
+					};
+				};
+				case _bino: {
+					if (!_addedB) then {
+						_u1 addWeapon _baseWeap;
+						for [{_i=1}, {_i < _iCount}, {_i=_i+1}] do {
+							_u1 addWeaponItem [_baseWeap, _itms select _i];
+						};
+						_addedB = true;
+						if (_addedS && _addedP && _addedH) then {
 							breakTo "_AT_FNC_CopyGear";
 						};
 					};
@@ -964,7 +971,7 @@ AT_FNC_CopyGear = {
 };
 
 //AT_FNC_Revive_WashAshore = {
-//	_player = [_this, 0, objNull] call BIS_fnc_param;
+//	params [["_player", objNull, [objNull]]];
 //	_center = SouthWest vectorAdd (NorthEast vectordiff SouthWest);
 //	_radius = 10;
 //	_wpos = [];
@@ -980,14 +987,13 @@ AT_FNC_CopyGear = {
 //	if((_player getVariable "AT_Revive_isUnconscious")) then {
 //		_player setpos _wpos;
 //		_msg = format["%1 body washed ashore.",name _player];
-//		[[_msg],"AT_FNC_Revive_GlobalMsg",true] call bis_fnc_MP;
+//		[_msg] remoteExec ["AT_FNC_Revive_GlobalMsg", 0];
 //	};
-
 //};
-AT_FNC_Revive_WashAshore = {
-	private["_unit","_center","_pos","_distance","_vec","_found","_npos"];
 
-	_unit = [_this, 0] call BIS_fnc_param;
+AT_FNC_Revive_WashAshore = {
+	params ["_unit"];
+	private["_center","_pos","_distance","_vec","_found","_npos"];
 
 	_center = (position SouthWest) vectorAdd ((position NorthEast) vectordiff (position SouthWest));
 	_pos = getpos _unit;
@@ -1010,7 +1016,7 @@ AT_FNC_Revive_WashAshore = {
 		sleep 1;
 		_unit setpos _pos;
 		_msg = format["%1's body washed ashore.",name _unit];
-		[[_msg],"AT_FNC_Revive_GlobalMsg",true] call bis_fnc_MP;
+		[_msg] remoteExec ["AT_FNC_Revive_GlobalMsg", 0];
 		sleep 1;
 	    if(_unit == player) then {
 			titleFadeOut 1;

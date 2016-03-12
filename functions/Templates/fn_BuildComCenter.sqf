@@ -13,13 +13,13 @@ if (count _this > 3) then { _parkedVehicleClasses = _this select 3; } else { _pa
 _fnc_CreateObject = {
     private ["_className", "_relativePos", "_relativeDir", "_centerPos", "_rotateDir"];
     private ["_object", "_realPos", "_realDir"];
-    
+
     _className = _this select 0;
     _relativePos = _this select 1;
     _relativeDir = _this select 2;
     _centerPos = _this select 3;
     _rotateDir = _this select 4;
-    
+
     _realPos = ([_centerPos, [(_centerPos select 0) + (_relativePos select 0), (_centerPos select 1) + (_relativePos select 1)], _rotateDir] call a3e_fnc_RotatePosition);
     _realDir = _relativeDir + _rotateDir;
     _object = createVehicle [_className, _realPos, [], 0, "CAN_COLLIDE"];
@@ -31,13 +31,13 @@ _fnc_CreateObject = {
 _fnc_CreateVehicle = {
     private ["_className", "_relativePos", "_relativeDir", "_centerPos", "_rotateDir"];
     private ["_object", "_realPos", "_realDir"];
-    
+
     _className = _this select 0;
     _relativePos = _this select 1;
     _relativeDir = _this select 2;
     _centerPos = _this select 3;
     _rotateDir = _this select 4;
-    
+
     _realPos = ([_centerPos, [(_centerPos select 0) + (_relativePos select 0), (_centerPos select 1) + (_relativePos select 1)], _rotateDir] call a3e_fnc_RotatePosition);
     _realDir = _relativeDir + _rotateDir;
     //_object = _className createVehicle _realpos;
@@ -218,14 +218,12 @@ _dir = 90;
 _pos = [0, -9];
 _dir = 90;
 _obj = ["Land_PowerGenerator_F", _pos, _dir, _centerPos, _rotateDir] call _fnc_CreateObject;
-//[[_obj, "Hijack", "Scripts\Escape\Hijack.sqf"], "a3e_fnc_addHijackAction", nil, false] spawn BIS_fnc_MP;
 _obj setvariable ["A3E_isTerminal",true,true];
 _obj allowDamage false;
 
 _pos = [13, 1];
 _dir = 90;
 _obj = ["Land_Medevac_House_V1_F", _pos, _dir, _centerPos, _rotateDir] call _fnc_CreateObject;
-//[[_obj, "Heal at medical building", "Scripts\Escape\HealAtMedicalBuilding.sqf"], "a3e_fnc_addHealAtMedicalBuildingAction", nil, false] spawn BIS_fnc_MP;
 
 _pos = [10, -5];
 _dir = 180;
@@ -259,33 +257,33 @@ if (count _staticWeaponClasses > 0) then {
     // Statics
     _pos = [-17, 13.5];
     _dir = 0;
-    
-    _gun = _staticWeaponClasses select floor random count _staticWeaponClasses;
+
+    _gun = _staticWeaponClasses call BIS_fnc_selectRandom;
     _static = [_gun, _pos, _dir, _centerPos, _rotateDir] call _fnc_CreateObject;
-	[_static,A3E_VAR_Side_Opfor] spawn A3E_fnc_AddStaticGunner; 
-    
+	[_static,A3E_VAR_Side_Opfor] spawn A3E_fnc_AddStaticGunner;
+
     _pos = [17, -9.5];
     _dir = 135;
-    
+
     //_guns = ["DSHkM_Mini_TriPod", "AGS_Ins", "DSHKM_Ins"];
     _guns = ["O_HMG_01_high_F"];
-    _gun = _guns select floor random count _guns;
+    _gun = _guns call BIS_fnc_selectRandom;
     _static = [_gun, _pos, _dir, _centerPos, _rotateDir] call _fnc_CreateObject;
-	[_static,A3E_VAR_Side_Opfor] spawn A3E_fnc_AddStaticGunner; 
+	[_static,A3E_VAR_Side_Opfor] spawn A3E_fnc_AddStaticGunner;
 };
 
 if (count _parkedVehicleClasses > 0) then {
     // Cars
     _pos = [11.5, 12];
     _dir = 270;
-    
-    _vehicle = _parkedVehicleClasses select floor random count _parkedVehicleClasses;
+
+    _vehicle = _parkedVehicleClasses call BIS_fnc_selectRandom;
     [_vehicle, _pos, _dir, _centerPos, _rotateDir] call _fnc_CreateVehicle;
     //_object = _vehicle createVehicle [_realPos, [], 0, "CAN_COLLIDE"];
-	
+
     _pos = [11.5, 6.5];
     _dir = 270;
-    
-    _vehicle = _parkedVehicleClasses select floor random count _parkedVehicleClasses;
+
+    _vehicle = _parkedVehicleClasses call BIS_fnc_selectRandom;
     [_vehicle, _pos, _dir, _centerPos, _rotateDir] call _fnc_CreateObject;
 };

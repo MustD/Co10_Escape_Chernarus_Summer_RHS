@@ -21,17 +21,17 @@ if (_debug) then {
 _fnc_GetDestinationPos = {
     private ["_referenceUnit"];
     private ["_destinationPos", "_roadSegments"];
-    
+
     _referenceUnit = _this select 0;
-    
+
     _destinationPos = [];
-    
+
     _roadSegments = _referenceUnit nearRoads 1250;
-    
+
     if (count _roadSegments > 0) then {
-        _destinationPos = getPos (_roadSegments select floor random count _roadSegments);
+        _destinationPos = getPos (_roadSegments call BIS_fnc_selectRandom);
     };
-    
+
     _destinationPos
 };
 
@@ -60,39 +60,39 @@ private ["_waypoint"];
 _enemySighted = false;
 
 while {!_enemySighted} do {
-    
+
     // Goto new position
     _vehicle setVariable ["waypointFulfilled", false];
-    
+
     _destinationPos = [];
     while {count _destinationPos == 0} do {
         _destinationPos = [(units _referenceGroup) select 0] call _fnc_GetDestinationPos;
         sleep 1;
     };
-    
+
     _waypoint = _group addWaypoint [_destinationPos, 2];
     _waypoint setWaypointType "MOVE";
     _waypoint setWaypointBehaviour "SAFE";
     _waypoint setWaypointSpeed "NORMAL";
     _waypoint setWaypointStatements ["true", vehicleVarName _vehicle + " setVariable [""waypointFulfilled"", true];"];
     _waypoint setWaypointCombatMode "BLUE";
-    
+
     _vehicle setFuel 0.3 + random 0.6;
-    
+
     if (_debug) then {
         ["drn_CivilianEnemy_DestinationPositionDebugMarker" + str _currentEntityNo] call drn_fnc_CL_DeleteDebugMarkerAllClients;
         ["drn_CivilianEnemy_DestinationPositionDebugMarker" + str _currentEntityNo, _destinationPos, "mil_dot", "ColorRed", "CivEn" + str _currentEntityNo + " destination"] call drn_fnc_CL_SetDebugMarkerAllClients;
     };
-    
+
     while {(!(_vehicle getVariable "waypointFulfilled")) && !_enemySighted} do {
-        
+
         if (_debug) then {
             ["drn_CivilianEnemy_VehicleDebugMarker" + str _currentEntityNo] call drn_fnc_CL_DeleteDebugMarkerAllClients;
             ["drn_CivilianEnemy_VehicleDebugMarker" + str _currentEntityNo, getPos _vehicle, "mil_dot", "ColorRed", "CivEn" + str _currentEntityNo] call drn_fnc_CL_SetDebugMarkerAllClients;
         };
-        
+
         sleep 1;
-        
+
         {
             _enemyUnit = _x findNearestEnemy _x;
             if (!isNull _enemyUnit) then {
@@ -127,20 +127,20 @@ while {count _dropPos == 0} do {
 };
 
 if (count _dropPos > 0) then {
-    
+
     _truck setVariable ["reinforcementTruckReturning", false];
-    
+
     if (_debug) then {
         ["drn_ReinforcementTruck_DropPositionDebugMarker" + str _currentEntityNo, _dropPos, "mil_dot", "ColorRed", "RT" + str _currentEntityNo + " drop pos"] call drn_fnc_CL_SetDebugMarkerAllClients;
     };
-    
+
     while {!(_truck getVariable "reinforcementTruckReturning")} do {
 
         if (_debug) then {
             ["drn_ReinforcementTruck_VehicleDebugMarker" + str _currentEntityNo] call drn_fnc_CL_DeleteDebugMarkerAllClients;
             ["drn_ReinforcementTruck_VehicleDebugMarker" + str _currentEntityNo, getPos _truck, "mil_dot", "ColorRed", "RT" + str _currentEntityNo] call drn_fnc_CL_SetDebugMarkerAllClients;
         };
-        
+
         // If marker have moved, get a new destination position.
         if (!([_dropPos, _dropMarker] call drn_fnc_CL_PositionIsInsideMarker)) then {
             _dropPos = [];
@@ -150,21 +150,21 @@ if (count _dropPos > 0) then {
             };
 
             [_crewGroup] call _fnc_ClearAllWaypoints;
-            
+
             if (_debug) then {
                 ["drn_ReinforcementTruck_DropPositionDebugMarker" + str _currentEntityNo] call drn_fnc_CL_DeleteDebugMarkerAllClients;
                 ["drn_ReinforcementTruck_DropPositionDebugMarker" + str _currentEntityNo, _dropPos, "mil_dot", "ColorRed", "RT" + str _currentEntityNo + " drop pos"] call drn_fnc_CL_SetDebugMarkerAllClients;
                 ["Reinforcement truck got new intel, and moving to another position..."] call drn_fnc_CL_ShowDebugTextAllClients;
             };
         };
-        
+
         _waypoint = _crewGroup addWaypoint [_dropPos, 10];
         _waypoint setWaypointType "MOVE";
         _waypoint setWaypointBehaviour "SAFE";
         _waypoint setWaypointSpeed "NORMAL";
         _waypoint setWaypointStatements ["true", vehicleVarName _truck + " setVariable [""waypointFulfilled"", true];"];
         _waypoint setWaypointCombatMode "BLUE";
-        
+
         sleep 1;
     };
 };

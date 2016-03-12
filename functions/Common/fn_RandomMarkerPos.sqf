@@ -1,6 +1,5 @@
-private["_marker","_size","_pos","_dir","_x_pos","_y_pos","_a","_b","_i"];
-_marker = [_this, 0, "noMarker", [""]] call BIS_fnc_param;
-
+params [["_marker", "noMarker", [""]]];
+private["_size","_pos","_dir","_x_pos","_y_pos","_a","_b","_i"];
 
 _size = getMarkerSize _marker;
 _pos = getMarkerPos _marker;

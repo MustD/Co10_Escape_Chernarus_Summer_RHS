@@ -12,7 +12,7 @@ _unitTypes = _this select 4;
 _enemyFrequency = _this select 5;
 if (count _this > 6) then {_debug = _this select 6;} else {_debug = false;};
 
-_vehicleClass = _vehicleTypes select floor random count _vehicleTypes;
+_vehicleClass = _vehicleTypes call BIS_fnc_selectRandom;
 //_vehicle = _vehicleClass createVehicle _spawnPos;
 _vehicle = createVehicle [_vehicleClass, _spawnPos, [], 0, "NONE"];
 
@@ -31,7 +31,7 @@ _vehicle call compile format ["%1=_this;", _vehicleVarName];
 _group = [_vehicle, _side, _unitTypes, _enemyFrequency] call drn_fnc_Escape_PopulateVehicle;
 
 {
-    _x call drn_fnc_Escape_OnSpawnGeneralSoldierUnit;    
+    _x call drn_fnc_Escape_OnSpawnGeneralSoldierUnit;
 } foreach units _group;
 
 if (_debug) then {

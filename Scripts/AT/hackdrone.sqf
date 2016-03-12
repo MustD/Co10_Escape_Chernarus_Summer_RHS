@@ -1,11 +1,11 @@
 
 at_fnc_dh_init = {
-	
+
 	AT_DH_Sides = [east,west,resistance];
 	AT_DH_Terminals = ["O_UavTerminal","B_UavTerminal","I_UavTerminal"];
 	AT_DH_DronesPacked = ["O_UAV_01_backpack_F","B_UAV_01_backpack_F","I_UAV_01_backpack_F"];
 	AT_DH_Drones = ["O_UAV_01_F","B_UAV_01_F","I_UAV_01_F"];
-	
+
 	player addAction ["Hack UAV Terminal", at_fnc_dh_hackUAVTerminal, [],1,false,true,"", "_this call at_fnc_dh_terminalCheck"];
 	player addAction ["Hack packed UAV", at_fnc_dh_hackUAVBackpack, [],1,false,true,"", "_this call at_fnc_dh_backpackCheck"];
 };
@@ -18,7 +18,7 @@ at_fnc_dh_hackUAVTerminal = {
 	_unitItems = (items _unit);
 	{
 		if((_unitItems find _x)!=-1 && _forEachIndex != _sideNumber) exitwith {
-			[[_unit,"AinvPknlMstpSlayWrflDnon_medic"],"at_fnc_dh_switchMove",true] call BIS_fnc_MP;
+			[_unit,"AinvPknlMstpSlayWrflDnon_medic"] remoteExec ["at_fnc_dh_switchMove", 0];
 			[_unit,_x,(AT_DH_Terminals select _sideNumber)] spawn {
 				sleep 6;
 				if(alive (_this select 0)) then {
@@ -36,7 +36,7 @@ at_fnc_dh_hackUAVBackpack = {
 	if(_sideNumber < 0) exitwith {systemchat "Your side was not found";};
 	{
 		if(backpack _unit == _x && _forEachIndex != _sideNumber) exitwith {
-			[[_unit,"AinvPknlMstpSlayWrflDnon_medic"],"at_fnc_dh_switchMove",true] call BIS_fnc_MP;
+			[_unit,"AinvPknlMstpSlayWrflDnon_medic"] remoteExec ["at_fnc_dh_switchMove", 0];
 			[_unit,(AT_DH_DronesPacked select _sideNumber)] spawn {
 				sleep 6;
 				if(alive (_this select 0)) then {
@@ -77,7 +77,7 @@ AT_FNC_dh_Switchmove = {
 	_unit = _this select 0;
 	_anim = _this select 1;
 
-	_unit switchmove _anim;	
+	_unit switchmove _anim;
 
 };
 call at_fnc_dh_init;

@@ -1,7 +1,6 @@
 A3E_fnc_GetPlayers = {
 	private["_players"];
-	//_players = allPlayers; // requires 1.48
-	_players = [] call BIS_fnc_listPlayers;
+	_players = allPlayers;
 	_players
 };
 
@@ -22,10 +21,9 @@ pdth_fnc_weapon_slot_comp_items = {
 			// returns ["acc_flashlight", "acc_pointer_IR"]
 			_arrPointers = ["arifle_MX_F", "PointerSlot"] call pdth_fnc_weapon_slot_comp_items;
 	**/
-	private ["_clName", "_slName", "_ret"];
+	params [["_clName", "", [""]], ["_slName", "", [""]]];
+	private ["_ret"];
 	_ret = [];
-	_clName = [_this, 0, "", [""]] call BIS_fnc_param;
-	_slName = [_this, 1, "", [""]] call BIS_fnc_param;
 	if ((isClass (configFile >> "CfgWeapons" >> _clName)) && (isClass (configFile >> "CfgWeapons" >> _clName >> "WeaponSlotsInfo" >> _slName))) then {
 		private "_compItems";
 		_compItems = (configFile >> "CfgWeapons" >> _clName >> "WeaponSlotsInfo" >> _slName >> "compatibleItems");
@@ -59,25 +57,25 @@ pdth_fnc_weapon_scopes = {
 		return: Array: [[(noneScope1, ...)], [(normalScope1, ...)], [(nvgScope1, ...)], [(tiScope1, ...)]]
 			noneScope1, normalScope1, nvgScope1, tiScope1, ...: Strings
 	*/
-	private ["_clName", "_full", "_ret", "_none", "_normal", "_nvg", "_ti"];
+	params [["_clName", "", [""]], ["_full", false, [false]]];
+	private ["_ret", "_none", "_normal", "_nvg", "_ti"];
 	_none = [];
 	_normal = [];
 	_nvg = [];
 	_ti = [];
-	_clName = [_this, 0, "", [""]] call BIS_fnc_param;
-	_full = [_this, 1, false, [true]] call BIS_fnc_param;
 	if (isClass (configFile >> "CfgWeapons" >> _clName)) then {
 		private "_opt";
 		_opt = [_clName, "CowsSlot"] call pdth_fnc_weapon_slot_comp_items;
 		if ((!(isNil "_opt")) && ((count _opt) > 0)) then {
 			{
-				private ["_optName", "_visModes", "_optModes", "_hasEmpty", "_hasNonEmpty"];
+				private ["_optName", "_visModes", "_optModes", "_hasEmpty", "_hasNonEmpty", "_1pn93"];
 				_optName = _x;
 				_visModes = [];
 				_hasEmpty = false;
 				_hasNonEmpty = false;
 				_optModes = configProperties [(configFile >> "CfgWeapons" >> _optName >> "ItemInfo" >> "OpticsModes")];
-				{
+				_1pn93 = ("rhs_acc_1pn93_base" in ([(configFile >> "CfgWeapons" >> _optName),true] call BIS_fnc_returnParents));
+				{ // forEach forEach _optModes;
 					private "_optMod";
 					_optMod = _x;
 					_visModes = (getArray(_x >> "visionMode"));
@@ -97,9 +95,11 @@ pdth_fnc_weapon_scopes = {
 							};
 						};
 						if ("Normal" in _visModes) then {
-							if (_full && ("rhs_acc_1pn93_base" in ([(configFile >> "CfgWeapons" >> _optName),true] call BIS_fnc_returnParents))) then {
-								// rhs_acc_1pn93_* are broken in RHS 0.3.7, they have ironsight optics mode with "Normal" visMode, when actually there's no "Normal", only visionMode[]={}
-								_none pushBack _optName;
+							if (_1pn93) then {
+								if (_full) then {
+									// rhs_acc_1pn93_* are broken in RHS 0.3.7, they have ironsight optics mode with "Normal" visMode, when actually there's no "Normal", only visionMode[]={}
+									_none pushBack _optName;
+								};
 								_hasEmpty = true;
 							} else {
 								_normal pushBack _optName;
@@ -190,12 +190,9 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 	// 30% chance to have a scope for non-marksman
 	if ((random 100 < 30) || _marksman) then {
 		if (_pWeap != "") then {
-			private ["_opt", "_optTi", "_optNVG", "_optNormalOnly", "_optNone", "_wNo", "_wNrm", "_wNVG", "_wTi", "_wTotal", "_wRnd", "_scope"];
+			private ["_opt", "_wNo", "_wNrm", "_wNVG", "_wTi", "_wTotal", "_wRnd", "_scope"];
 			_opt = [_pWeap] call pdth_fnc_weapon_scopes;
-			_optNone = [_opt, 0, [], [[]]] call BIS_fnc_param;
-			_optNormal = [_opt, 1, [], [[]]] call BIS_fnc_param;
-			_optNVG = [_opt, 2, [], [[]]] call BIS_fnc_param;
-			_optTi = [_opt, 3, [], [[]]] call BIS_fnc_param;
+			_opt params [["_optNone", [], [[]]], ["_optNormalOnly", [], [[]]], ["_optNVG", [], [[]]], ["_optTi", [], [[]]]];
 			// _optTi only contains scopes w/ thermal
 			// _optNVG only contains scopes w/o thermal, but w/ nvg
 			// _optNormalOnly only contains scopes w/o thermal and nvg, but with normal optic zoom (not compatible with nv goggles)
@@ -203,12 +200,12 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 			// Weights for different scopes, not actual percents due to params and conditions
 			if (_nighttime) then {
 				_wNo = if ((count _optNone) > 0) then {10} else {0}; // those are scopes! collimators, ACO, RCO, MRCO, etc. goes here. "No" means no special vis mode here
-				_wNrm = if ((count _optNormal) > 0) then {30} else {0};
+				_wNrm = if ((count _optNormalOnly) > 0) then {30} else {0};
 				_wNVG = if ((Param_NoNightvision==0) && ((count _optNVG) > 0)) then {50} else {0};
 				_wTi = if ((Param_NoNightvision==0) && ((count _optTi) > 0)) then {10} else {0};
 			} else {
 				_wNo = if ((count _optNone) > 0) then {60} else {0};
-				_wNrm = if ((count _optNormal) > 0) then {30} else {0};
+				_wNrm = if ((count _optNormalOnly) > 0) then {30} else {0};
 				_wNVG = 0; // NVG scopes usually do not have "turn off" option for NVG mode, so unusable in daytime anyway
 				_wTi = if ((Param_NoNightvision==0) && ((count _optTi) > 0)) then {10} else {0};
 			};
@@ -221,21 +218,21 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 			_scope = "";
 			if (_wRnd < _wNo) then {
 				if ((count _optNone) > 0) then {
-					_scope = _optNone select floor(random(count(_optNone)));
+					_scope = _optNone call BIS_fnc_selectRandom;
 				};
 			} else {
 				if (_wRnd < (_wNo+_wNrm)) then {
-					if ((count _optNormal) > 0) then {
-						_scope = _optNormal select floor(random(count(_optNormal)));
+					if ((count _optNormalOnly) > 0) then {
+						_scope = _optNormalOnly call BIS_fnc_selectRandom;
 					};
 				} else {
 					if (_wRnd < (_wNo+_wNrm+_wNVG)) then {
 						if ((count _optNVG) > 0) then {
-							_scope = _optNVG select floor(random(count(_optNVG)));
+							_scope = _optNVG call BIS_fnc_selectRandom;
 						};
 					} else {
 						if ((count _optTi) > 0) then {
-							_scope = _optTi select floor(random(count(_optTi)));
+							_scope = _optTi call BIS_fnc_selectRandom;
 						};
 					};
 				};
@@ -253,7 +250,7 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 			_ptrs = [_pWeap, "PointerSlot"] call pdth_fnc_weapon_slot_comp_items;
 			if (!(isNil "_ptrs")) then {
 				if ((count _ptrs) > 0) then {
-					_this addPrimaryWeaponItem (_ptrs select floor(random(count(_ptrs))));
+					_this addPrimaryWeaponItem (_ptrs call BIS_fnc_selectRandom);
 				};
 			};
 		};
@@ -266,7 +263,7 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 			_bips = [_pWeap, "UnderBarrelSlot"] call pdth_fnc_weapon_slot_comp_items;
 			if (!(isNil "_bips")) then {
 				if ((count _bips) > 0) then {
-					_this addPrimaryWeaponItem (_bips select floor(random(count(_bips))));
+					_this addPrimaryWeaponItem (_bips call BIS_fnc_selectRandom);
 				};
 			};
 		};
@@ -279,7 +276,7 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 			_muzs = [_pWeap, "MuzzleSlot"] call pdth_fnc_weapon_slot_comp_items;
 			if (!(isNil "_muzs")) then {
 				if ((count _muzs) > 0) then {
-					_this addPrimaryWeaponItem (_muzs select floor(random(count(_muzs))));
+					_this addPrimaryWeaponItem (_muzs call BIS_fnc_selectRandom);
 				};
 			};
 		};
@@ -331,36 +328,30 @@ drn_fnc_Escape_OnSpawnGeneralSoldierUnit = {
 
 drn_fnc_Escape_FindGoodPos = {
 	private ["_i", "_startPos", "_isOk", "_result", "_roadSegments", "_dummyObject"];
-    // Choose a random and flat position (for-loopen and markers are for test on new maps).
-    for [{_i = 0},  {_i < 1}, {_i = _i + 1}] do {
-        _isOk = false;
-        while {!_isOk} do {
-
+	// Choose a random and flat position (for-loopen and markers are for test on new maps).
+	for [{_i = 0},  {_i < 1}, {_i = _i + 1}] do {
+		_isOk = false;
+		while {!_isOk} do {
 			_startPos = [(getpos SouthWest select 0) + random (getpos NorthEast select 0),(getpos SouthWest select 1) + random (getpos NorthEast select 1)];
 
-
-            //diag_log ("startPos == " + str _startPos);
-            _result = _startPos isFlatEmpty [5, 0, 0.25, 1, 0, false, objNull];
-            _roadSegments = _startPos nearRoads 30;
+			//diag_log ("startPos == " + str _startPos);
+			_result = _startPos isFlatEmpty [5, 0, 0.25, 1, 0, false, objNull];
+			_roadSegments = _startPos nearRoads 30;
 			_buildings = _startPos nearObjects 30;
 
-            if ((count _result > 0) && (count _roadSegments == 0) && (!surfaceIsWater _startPos) && (count _buildings == 0)) then {
+			if ((count _result > 0) && (count _roadSegments == 0) && (!surfaceIsWater _startPos) && (count _buildings == 0)) then {
 				_startPos = _result;
-                _dummyObject = "Land_Can_Rusty_F" createVehicleLocal _startPos;
-
-                if (((nearestBuilding _dummyObject) distance _startPos) > 50) then {
-                    _isOk = true;
-                };
-
-                deleteVehicle _dummyObject;
-            };
-        };
-
-        //_marker = createMarker ["marker" + str _i, _startPos];
-        //_marker setMarkerType "Warning";
-    };
-
-    _startPos
+				_dummyObject = "Land_Can_Rusty_F" createVehicleLocal _startPos;
+				if (((nearestBuilding _dummyObject) distance _startPos) > 50) then {
+					_isOk = true;
+				};
+				deleteVehicle _dummyObject;
+			};
+		};
+		//_marker = createMarker ["marker" + str _i, _startPos];
+		//_marker setMarkerType "Warning";
+	};
+	_startPos
 };
 
 drn_fnc_Escape_FindAmmoDepotPositions = {
@@ -742,7 +733,7 @@ drn_fnc_Escape_AddRemoveComCenArmor = {
 			if (count _roadSegments == 0) then {
 				_roadSegments = (_pos nearRoads 1000);
 			};
-            _spawnPos = getPos (_roadSegments select floor random count _roadSegments);
+            _spawnPos = getPos (_roadSegments call BIS_fnc_selectRandom);
             _result = [_spawnPos, 0, _x, A3E_VAR_Side_Opfor] call BIS_fnc_spawnVehicle;
             _vehicle = _result select 0;
             _crew = _result select 1;
@@ -799,15 +790,15 @@ drn_fnc_Escape_InitializeComCenArmor = {
         {
             case 1:
             {
-                a3e_arr_Escape_ComCenArmors set [count a3e_arr_Escape_ComCenArmors, [_pos, [a3e_arr_ComCenDefence_lightArmorClasses select floor random count a3e_arr_ComCenDefence_lightArmorClasses], []]];
+                a3e_arr_Escape_ComCenArmors set [count a3e_arr_Escape_ComCenArmors, [_pos, [a3e_arr_ComCenDefence_lightArmorClasses call BIS_fnc_selectRandom], []]];
             };
             case 2:
             {
-                a3e_arr_Escape_ComCenArmors set [count a3e_arr_Escape_ComCenArmors, [_pos, [a3e_arr_ComCenDefence_heavyArmorClasses select floor random count a3e_arr_ComCenDefence_heavyArmorClasses], []]];
+                a3e_arr_Escape_ComCenArmors set [count a3e_arr_Escape_ComCenArmors, [_pos, [a3e_arr_ComCenDefence_heavyArmorClasses call BIS_fnc_selectRandom], []]];
             };
             default
             {
-                a3e_arr_Escape_ComCenArmors set [count a3e_arr_Escape_ComCenArmors, [_pos, [a3e_arr_ComCenDefence_lightArmorClasses select floor random count a3e_arr_ComCenDefence_lightArmorClasses, a3e_arr_ComCenDefence_heavyArmorClasses select floor random count a3e_arr_ComCenDefence_heavyArmorClasses], []]];
+                a3e_arr_Escape_ComCenArmors set [count a3e_arr_Escape_ComCenArmors, [_pos, [a3e_arr_ComCenDefence_lightArmorClasses call BIS_fnc_selectRandom, a3e_arr_ComCenDefence_heavyArmorClasses call BIS_fnc_selectRandom], []]];
             };
         };
 
@@ -832,7 +823,7 @@ drn_fnc_Escape_FindSpawnSegment = {
 
     _spawnDistanceDiff = _maxSpawnDistance - _minSpawnDistance;
     _roadSegment = "NULL";
-    _refUnit = vehicle ((units _referenceGroup) select (floor (random (count (units _referenceGroup)))));
+    _refUnit = vehicle ((units _referenceGroup) call BIS_fnc_selectRandom);
 
     _isOk = false;
     _tries = 0;
@@ -846,7 +837,7 @@ drn_fnc_Escape_FindSpawnSegment = {
         _roadSegments = [_refPosX, _refPosY] nearRoads (_spawnDistanceDiff);
 
         if (count _roadSegments > 0) then {
-            _roadSegment = _roadSegments select floor random count _roadSegments;
+            _roadSegment = _roadSegments call BIS_fnc_selectRandom;
 
             // Check if road segment is at spawn distance
             _tooFarAwayFromAll = true;
@@ -907,7 +898,7 @@ drn_fnc_Escape_PopulateVehicle = {
     // Driver
     _continue = true;
     while {_continue && (_soldierCount <= _maxSoldiersCount)} do {
-        _unitType = _unitTypes select floor random count _unitTypes;
+        _unitType = _unitTypes call BIS_fnc_selectRandom;
         _insurgentSoldier = _group createUnit [_unitType, [0,0,0], [], 0, "FORM"];
 
         _insurgentSoldier setRank "LIEUTNANT";
@@ -927,7 +918,7 @@ drn_fnc_Escape_PopulateVehicle = {
     // Gunner
     _continue = true;
     while {_continue && _soldierCount <= _maxSoldiersCount} do {
-        _unitType = _unitTypes select floor random count _unitTypes;
+        _unitType = _unitTypes call BIS_fnc_selectRandom;
         _insurgentSoldier = _group createUnit [_unitType, [0,0,0], [], 0, "FORM"];
 
         _insurgentSoldier setRank "LIEUTNANT";
@@ -947,7 +938,7 @@ drn_fnc_Escape_PopulateVehicle = {
     // Commander
     _continue = true;
     while {_continue && _soldierCount <= _maxSoldiersCount} do {
-        _unitType = _unitTypes select floor random count _unitTypes;
+        _unitType = _unitTypes call BIS_fnc_selectRandom;
         _insurgentSoldier = _group createUnit [_unitType, [0,0,0], [], 0, "FORM"];
 
         _insurgentSoldier setRank "LIEUTNANT";
@@ -967,7 +958,7 @@ drn_fnc_Escape_PopulateVehicle = {
     // Cargo
     _continue = true;
     while {_continue && _soldierCount <= _maxSoldiersCount} do {
-        _unitType = _unitTypes select floor random count _unitTypes;
+        _unitType = _unitTypes call BIS_fnc_selectRandom;
         _insurgentSoldier = _group createUnit [_unitType, [0,0,0], [], 0, "FORM"];
 
         _insurgentSoldier setRank "LIEUTNANT";

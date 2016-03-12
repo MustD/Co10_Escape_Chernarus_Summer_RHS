@@ -1,5 +1,5 @@
-private["_side","_color"];
-_side = [_this,0] call bis_fnc_param;
+params ["_side"];
+private["_color"];
 
 switch(_side) do {
 	case (civilian):{_color = "ColorWhite";};

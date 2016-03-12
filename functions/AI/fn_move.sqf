@@ -1,13 +1,7 @@
-private["_group","_position","_type","_formation","_speed","_combatmode","_onComplete","_script","_marker","_markername"];
-
-_group = [_this,0,grpNull,[grpNull]] call bis_fnc_param;
-_position = [_this,1,[0,0,0],[[]]] call bis_fnc_param;
-_type = [_this,2,"MOVE",[""]] call bis_fnc_param;
-_formation = [_this,3,"COLUMN",[""]] call bis_fnc_param;
-_speed = [_this,4,"LIMITED",[""]] call bis_fnc_param;
-_combatmode = [_this,5,"SAFE",[""]] call bis_fnc_param;
-_onComplete = [_this,6,"",[""]] call bis_fnc_param;
-
+params [["_group", grpNull,[grpNull]], ["_position", [0,0,0], [[]], [2,3]], ["_type", "MOVE", [""]],
+	["_formation", "COLUMN", [""]], ["_speed", "LIMITED", [""]], ["_combatmode", "SAFE", [""]],
+	["_onComplete", "", [""]]];
+private["_script","_marker","_markername"];
 
 if(a3e_debug_EnemyPosition) then {
 	_script = _group getvariable "a3e_debug_positionScript";

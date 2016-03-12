@@ -38,8 +38,7 @@ ATHSC_fnc_createCam = {
 };
 ATHSC_fnc_updateCam = {
 	private["_commit","_target"];
-	//_commit = param [0,0]; // requires A3 v1.48
-	_commit = [_this, 0, 0] call BIS_fnc_param;
+	_commit = param [0, 0];
 	if(!(isNull ATHSC_Cam)) then {
 		_target = ATHSC_CamTarget;
 		if(vehicle _target != _target) then {
@@ -95,8 +94,8 @@ ATHSC_fnc_camLoop = {
 	};
 };
 ATHSC_fnc_cycleEntity = {
-	private["_list","_next","_index"];
-	_next = [_this,0,true] call bis_fnc_param;
+	params [["_next", true]];
+	private["_list","_index"];
 	_list = [];
 	_list = [] + AT_Revive_StaticRespawns;
 	_list pushBack player;
@@ -227,11 +226,9 @@ ATHSC_fnc_keyDown = {
 	_handled;
 };
 ATHSC_fnc_updateText = {
-	private["_enemysNear","_targetUnconscious","_targetName","_line1","_line2","_control","_text"];
+	params [["_enemysNear", false], ["_targetUnconscious", false], ["_targetName", "Respawn"]];
+	private["_line1","_line2","_control","_text"];
 	disableSerialization;
-	_enemysNear = [_this,0,false] call bis_fnc_param;
-	_targetUnconscious = [_this,1,false] call bis_fnc_param;
-	_targetName = [_this,2,"Respawn"] call bis_fnc_param;
 	_line1 = format["You are watching %1",_targetName];
 	_line2 = "";
 	if(_enemysNear) then {

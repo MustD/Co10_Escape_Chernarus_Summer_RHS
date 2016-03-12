@@ -46,7 +46,7 @@ while {!(isNil _vehicleVarName)} do {
 
 //_chopper = "O_Heli_Light_02_F" createVehicle _homePos;
 //_chopper = createVehicle ["RHS_Mi8AMTSh_vvsc", _homePos, [], 0, "NONE"];
-_chopperspawn = [_homePos, random 360, (a3e_arr_searchChopper select floor (random count a3e_arr_searchChopper)), A3E_VAR_Side_Opfor] call BIS_fnc_spawnVehicle;
+_chopperspawn = [_homePos, random 360, a3e_arr_searchChopper call BIS_fnc_selectRandom, A3E_VAR_Side_Opfor] call BIS_fnc_spawnVehicle;
 _chopper = _chopperspawn select 0;
 _chopper lock 0;
 _chopper setVehicleVarName _vehicleVarName;
@@ -57,11 +57,11 @@ _group = createGroup _side;
 //"O_Pilot_F" createUnit [getMarkerPos "drn_searchChopperStartPosMarker", _group, "", (_minSkill + random (_maxSkill - _minSkill)), "LIEUTNANT"];
 //"O_Pilot_F" createUnit [getMarkerPos "drn_searchChopperStartPosMarker", _group, "", (_minSkill + random (_maxSkill - _minSkill)), "LIEUTNANT"];
 //"O_Pilot_F" createUnit [position player, _group, "", (_minSkill + random (_maxSkill - _minSkill)), "LIEUTNANT"];
-/*_group createUnit [(a3e_arr_searchChopper_pilot select floor (random count a3e_arr_searchChopper_pilot)), getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FORM"];
-_group createUnit [(a3e_arr_searchChopper_pilot select floor (random count a3e_arr_searchChopper_pilot)), getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FORM"];
-_group createUnit [(a3e_arr_searchChopper_crew select floor (random count a3e_arr_searchChopper_crew)), getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FORM"];
-_group createUnit [(a3e_arr_searchChopper_crew select floor (random count a3e_arr_searchChopper_crew)), getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FORM"];
-_group createUnit [(a3e_arr_searchChopper_crew select floor (random count a3e_arr_searchChopper_crew)), getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FORM"];
+/*_group createUnit [a3e_arr_searchChopper_pilot call BIS_fnc_selectRandom, getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FORM"];
+_group createUnit [a3e_arr_searchChopper_pilot call BIS_fnc_selectRandom, getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FORM"];
+_group createUnit [a3e_arr_searchChopper_crew call BIS_fnc_selectRandom, getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FORM"];
+_group createUnit [a3e_arr_searchChopper_crew call BIS_fnc_selectRandom, getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FORM"];
+_group createUnit [a3e_arr_searchChopper_crew call BIS_fnc_selectRandom, getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FORM"];
 
 _unitArray = _unitArray + units _group;
 

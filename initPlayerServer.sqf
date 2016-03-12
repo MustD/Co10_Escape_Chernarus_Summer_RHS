@@ -1,26 +1,24 @@
-private["_player","_didJIP","_players","_placed"];
-
-_player = _this select 0;
-_didJIP =  _this select 1;
+params ["_player","_didJIP"];
+private ["_players","_placed"];
 
 if(name _player == "HC") then {
-    ["HC present. Offloading AI."] spawn a3e_fnc_debugmsg;
-    A3E_HC_ID = owner _player;
-    if(A3E_HC_ID==0) exitwith {
-         ["Getting HC ID failed!"] spawn a3e_fnc_debugmsg;
-    };
+	["HC present. Offloading AI."] spawn a3e_fnc_debugmsg;
+	A3E_HC_ID = owner _player;
+	if(A3E_HC_ID==0) exitwith {
+		["Getting HC ID failed!"] spawn a3e_fnc_debugmsg;
+	};
 } else {
-    //[format["%1 joined the Game!",name _player]] spawn a3e_fnc_debugmsg;
-	
+	//[format["%1 joined the Game!",name _player]] spawn a3e_fnc_debugmsg;
+
 	if(isNil("A3E_Players")) then {
 		A3E_Players = [];
 	};
-    A3E_Players = A3E_Players + [_player];
-    publicVariable "A3E_Players";
-	
-	[[[_player], {(_this select 0) setCaptive true;}], "BIS_fnc_spawn", _player, false] call BIS_fnc_MP;
+	A3E_Players = A3E_Players + [_player];
+	publicVariable "A3E_Players";
+
+	[[_player], {(_this select 0) setCaptive true;}] remoteExec ["BIS_fnc_spawn", _player];
 	diag_log format["Escape debug: %1 is waiting for prison creation.", name _player];
-    waituntil{sleep 0.5;(!isNil("A3E_FenceIsCreated") && !isNil("A3E_StartPos") && !isNil("A3E_ParamsParsed"))};
+	waituntil{sleep 0.5;(!isNil("A3E_FenceIsCreated") && !isNil("A3E_StartPos") && !isNil("A3E_ParamsParsed"))};
 	diag_log format["Escape debug: %1 is will be placed now.", name _player];
 	_placed = false;
 	if(time>60) then {
@@ -31,7 +29,7 @@ if(name _player == "HC") then {
 				_placed = true;
 				diag_log format["Escape debug: %1 placed at %2.", name _player, name _x];
 			};
-		} foreach _players;	
+		} foreach _players;
 	};
 	if(!_placed) then {
 		_player setpos [(A3E_StartPos select 0)+random 5.0-2.5,(A3E_StartPos select 1)+random 5.0-2.5,0];

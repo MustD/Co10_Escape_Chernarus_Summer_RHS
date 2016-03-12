@@ -111,7 +111,7 @@ while {true} do {
         _spawnPos = [units _referenceGroup, _minDistance, _maxSpawnDistance] call a3e_fnc_RandomSpawnPos;
         _skill = _minSkill + random (_maxSkill - _minSkill);
 
-        _faction = _factionsArray select (floor (random (count _factionsArray)));
+        _faction = _factionsArray call BIS_fnc_selectRandom;
         if(_faction == A3E_VAR_Side_Opfor) then {
             _possibleInfantryTypes = a3e_arr_Escape_InfantryTypes;
         };
@@ -124,7 +124,7 @@ while {true} do {
         _group = createGroup _faction;
 
         for [{_i = 0}, {_i < _unitsInGroup}, {_i = _i + 1}] do {
-            _infantryType = _possibleInfantryTypes select floor (random count _possibleInfantryTypes);
+            _infantryType = _possibleInfantryTypes call BIS_fnc_selectRandom;
             //_infantryType createUnit [_spawnPos, _group, "", _skill, "PRIVATE"];
 			_group createUnit [_infantryType, _spawnPos, [], 0, "FORM"];
         };

@@ -1,14 +1,14 @@
 // randomWeather2 Script
-// By Meatball 
+// By Meatball
 // v 0.9
 //
 // Setup Instructions
 //
 // 1) Copy the randomWeather2.sqf file into your root mission folder.
-// 
+//
 // 2) Set up a call for server and clients in init.sqf:
 //		execVM "randomWeather2.sqf";
-// 
+//
 // 3) If you want players to be able to select starting weather conditions, you must
 // 	have the following information in your parameters section of your description.ext
 /*
@@ -28,7 +28,7 @@ class Params
 //
 
 // The base weather template information is listed below:
- 
+
 // Weather Types        (#)             [Can Move From/To]      	[Settings: Overcast, Rain/Snow, Fog, WindEW, WindNS]
 // Clear                (0)             [0,1,5]                     [0.30,0,0,1,1]
 // Overcast             (1)             [0,1,2]                   [0.50,0,0,2,2]
@@ -39,7 +39,7 @@ class Params
 // Medium fog           (6)             [5,6,7]                     [0.40,0,[0.4,0.005,30],0,0]
 // Dense Fog            (7)             [6]                         [0.40,0,[0.6,0.0025,45],0,0]
 
- 
+
 // ============
 // Begin Script
 // ============
@@ -64,13 +64,13 @@ weatherTemplates = [
 		["Nightmare",[6],[0.5,0,[0.8,0.0025,30],0,0,0]],
 		["Thunderstorm",[3],[1.0,1.0,0.1,5,5,1]]
 	];
-	
+
 // DO NOT EDIT BELOW THIS LINE //
 
 // Setup Initial Weather Function
 mb_fnc_InitialWeather = {
 	private["_weatherInitialArray","_weatherInitialSettings","_weatherInitialOvercast","_weatherInitialRainSnow","_weatherInitialFog","_weatherInitialWindEW","_weatherInitialWindNS","_weatherInitialLightning"];
-	
+
 	waitUntil {!isNil "rw2_Current_Weather"};
 	_weatherInitialArray = weatherTemplates select rw2_Current_Weather;
     weatherCurrentName = _weatherInitialArray select 0;
@@ -80,9 +80,9 @@ mb_fnc_InitialWeather = {
     _weatherInitialRainSnow = _weatherInitialSettings select 1;
     _weatherInitialFog = _weatherInitialSettings select 2;
     _weatherInitialWindEW = _weatherInitialSettings select 3;
-    _weatherInitialWindNS = _weatherInitialSettings select 4;	
+    _weatherInitialWindNS = _weatherInitialSettings select 4;
 	_weatherInitialLightning = _weatherInitialSettings select 5;
-	
+
 		skipTime -24;
         86400 setOvercast _weatherInitialOvercast;
         0 setRain _weatherInitialRainSnow;
@@ -92,14 +92,14 @@ mb_fnc_InitialWeather = {
 		skipTime 24;
 		sleep 1;
 	    simulWeatherSync;
-			
+
 		if (rw2Debug == 1) then {hint format ["Debug Initialized Weather - %1\nOvercast: %2\nRain/Snow: %3\nFog: %4\nWind EW|NS: %5|%6",weatherCurrentName,_weatherInitialOvercast,_weatherInitialRainSnow,_weatherInitialFog,_weatherInitialWindEW,_weatherInitialWindNS];};
 };
 
 // Setup Update Weather Function
 mb_fnc_UpdateWeather = {
 	private ["_weatherCurrentArray","_weatherNextArray","_weatherNextSettings","_weatherNextOvercast","_weatherNextRainSnow","_weatherNextFog","_weatherNextWindEW","_weatherNextWindNS"];
-    
+
 	_weatherCurrentArray = weatherTemplates select rw2_Current_Weather;
 	weatherCurrentName = _weatherCurrentArray select 0;
 	_weatherNextArray = weatherTemplates select rw2_Next_Weather;
@@ -110,15 +110,15 @@ mb_fnc_UpdateWeather = {
 	_weatherNextRainSnow = _weatherNextSettings select 1;
 	_weatherNextFog = _weatherNextSettings select 2;
 	_weatherNextWindEW = _weatherNextSettings select 3;
-	_weatherNextWindNS = _weatherNextSettings select 4;	
+	_weatherNextWindNS = _weatherNextSettings select 4;
 	_weatherNextLightning = _weatherNextSettings select 5;
-	
+
 	if (overcast < _weatherNextOvercast) then {1200 setOvercast 1;} else {1200 setOvercast 0;};
     1200 setRain _weatherNextRainSnow;
     1200 setFog _weatherNextFog;
 	1200 setLightnings _weatherNextLightning;
     setWind [_weatherNextWindEW,_weatherNextWindNS,true];
-	
+
 	if (rw2Debug == 1) then {hint format ["Debug Updating Weather - %1\nOvercast: %2\nRain/Snow: %3\nFog: %4\nWind EW/NS: %5|%6",weatherNextName,_weatherNextOvercast,_weatherNextRainSnow,_weatherNextFog,_weatherNextWindEW,_weatherNextWindNS];};
 };
 if(isNil("Param_Weather")) then {
@@ -154,10 +154,10 @@ private ["_weatherUpdateArray","_weatherUpdateForecasts"];
 		sleep 10;
 		_weatherUpdateArray = weatherTemplates select rw2_Current_Weather;
 		_weatherUpdateForecasts = _weatherUpdateArray select 1;
-		rw2_Next_Weather = _weatherUpdateForecasts select floor(random(count(_weatherUpdateForecasts)));
+		rw2_Next_Weather = _weatherUpdateForecasts call BIS_fnc_selectRandom;
 		//publicVariable "rw2_Next_Weather";
 		sleep 1190;
-        //[[],"mb_fnc_UpdateWeather",true] spawn Bis_fnc_MP;
+	//[] remoteExec ["mb_fnc_UpdateWeather", 0];
 		[] call mb_fnc_UpdateWeather;
 		rw2_Current_Weather = rw2_Next_Weather;
 		//publicVariable "rw2_Current_Weather";

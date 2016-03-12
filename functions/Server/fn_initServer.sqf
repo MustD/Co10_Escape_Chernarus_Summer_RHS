@@ -526,7 +526,7 @@ waitUntil {scriptDone _scriptHandle};
 	_backpack = "B_AssaultPack_khk" createvehicle _startPos;
 
 	for [{_i = 0}, {_i < 5}, {_i = _i + 1}] do {
-		_weapon = a3e_arr_PrisonBackpackWeapons select floor(random(count(a3e_arr_PrisonBackpackWeapons)));
+		_weapon = a3e_arr_PrisonBackpackWeapons call BIS_fnc_selectRandom;
 		_backpack addWeaponCargoGlobal[(_weapon select 0),1];
 		_backpack addMagazineCargoGlobal[(_weapon select 1),3];
 	};
@@ -556,8 +556,8 @@ waitUntil {scriptDone _scriptHandle};
 			_createNewGroup = false;
 		};
 
-		//(a3e_arr_Escape_StartPositionGuardTypes select floor (random count a3e_arr_Escape_StartPositionGuardTypes)) createUnit [_pos, _guardGroup, "", (0.5), "CAPTAIN"];
-		_guardGroup createUnit [(a3e_arr_Escape_StartPositionGuardTypes select floor (random count a3e_arr_Escape_StartPositionGuardTypes)), _pos, [], 0, "FORM"];
+		//(a3e_arr_Escape_StartPositionGuardTypes call BIS_fnc_selectRandom) createUnit [_pos, _guardGroup, "", (0.5), "CAPTAIN"];
+		_guardGroup createUnit [a3e_arr_Escape_StartPositionGuardTypes call BIS_fnc_selectRandom, _pos, [], 0, "FORM"];
 
 		if (count units _guardGroup >= 2) then {
 			_createNewGroup = true;
@@ -652,7 +652,7 @@ waitUntil {scriptDone _scriptHandle};
 
 		// ESCAPE HAS STARTED
 		//{
-		//	[[[_x], {(_this select 0) setCaptive false;}], "BIS_fnc_spawn", _x, false] call BIS_fnc_MP;
+		//	[[_x], {(_this select 0) setCaptive false;}] remoteExec ["BIS_fnc_spawn", _x];
 		//} foreach call A3E_fnc_GetPlayers;
 		systemChat "Server: Escape has started.";
 	};
@@ -691,13 +691,13 @@ waitUntil {scriptDone _scriptHandle};
 		while{isNil("A3E_EscapeHasStarted")} do {
 			{
 				if(isNil("A3E_EscapeHasStarted") && !(captive _x)) then {
-					[[[_x], {(_this select 0) setCaptive true;}], "BIS_fnc_spawn", _x, false] call BIS_fnc_MP;
+					[[_x], {(_this select 0) setCaptive true;}] remoteExec ["BIS_fnc_spawn", _x];
 				};
 			} foreach call A3E_fnc_GetPlayers;
 			sleep 0.5;
 		};
 		{
-			[[[_x], {(_this select 0) setCaptive false;}], "BIS_fnc_spawn", _x, false] call BIS_fnc_MP;
+			[[_x], {(_this select 0) setCaptive false;}] remoteExec ["BIS_fnc_spawn", _x];
 		} foreach call A3E_fnc_GetPlayers;
 	};
 };

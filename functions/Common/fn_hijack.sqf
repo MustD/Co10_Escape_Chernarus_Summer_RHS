@@ -78,11 +78,7 @@ if (_count == 0) then {
 	a3e_var_Escape_ExtractionMarker = createMarker ["drn_visibleGoalMarker", a3e_var_Escape_ExtractionMarkerPos];
 	a3e_var_Escape_ExtractionMarker setMarkerType "Flag_NATO";
 
-//	if (requiredVersion "1.50") then {
-//		[_extractionPointNo] remoteExec ["A3E_fnc_CreateExtractionPoint",2,false];
-//	} else {
-		[[_extractionPointNo], "A3E_fnc_CreateExtractionPoint", false] call BIS_fnc_MP;
-//	}
+	[_extractionPointNo] remoteExec ["A3E_fnc_CreateExtractionPoint",2,false];
 
 	A3E_Task_ComCenter_Complete = true;
 	publicvariable "A3E_Task_ComCenter_Complete";

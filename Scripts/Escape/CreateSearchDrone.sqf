@@ -46,7 +46,7 @@ while {!(isNil _vehicleVarName)} do {
 
 //_chopper = "O_Heli_Light_02_F" createVehicle _homePos;
 _group = createGroup _side;
-_chopper  = _group createUnit [(a3e_arr_searchdrone select floor (random count a3e_arr_searchdrone)), getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FLYING"];
+_chopper  = _group createUnit [a3e_arr_searchdrone call BIS_fnc_selectRandom, getMarkerPos "drn_searchChopperStartPosMarker", [], 0, "FLYING"];
 _chopper lock false;
 _chopper setVehicleVarName _vehicleVarName;
 _chopper call compile format ["%1=_this;", _vehicleVarName];

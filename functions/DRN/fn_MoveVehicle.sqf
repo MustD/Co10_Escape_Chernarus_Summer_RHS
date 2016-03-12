@@ -40,7 +40,7 @@ else {
 			case 7: { _roadSegments = ([(_refPos select 0) - 7071, (_refPos select 1)] ) nearRoads 1500; };
 		};
 	};
-    _destinationSegment = _roadSegments select floor random count _roadSegments;
+    _destinationSegment = _roadSegments call BIS_fnc_selectRandom;
     _destinationPos = getPos _destinationSegment;
 };
 

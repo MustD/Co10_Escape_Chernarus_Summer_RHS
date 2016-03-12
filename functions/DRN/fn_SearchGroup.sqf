@@ -11,16 +11,11 @@
 
 if (!isServer) exitWith {};
 
-private ["_group", "_searchAreaMarkerName", "_firstPos", "_debug"];
+params [["_group", grpNull, [grpNull]], ["_searchAreaMarkerName", "", [""]], ["_firstPos", [0,0,0], [[]], [2,3]], ["_debug", false, [false]]];
 private ["_position", "_side", "_state", "_moveCompleted", "_moveToFirstPos", "_exitScript", "_soldiers", "_garbageGroup", "_enemyPos", "_firstUnit", "_enemyUnit"];
 private ["_subAreaSearchTimeSec", "_subAreaSize", "_defaultSearchAreaMarkerName", "_subAreaCreatedTime", "_stationaryMaxTimeSec", "_currentPos", "_lastPos", "_lastMoveTime"];
 private ["_subSearchAreaMarker", "_currentEntityNo", "_subSearchAreaMarkerName"];
 private ["_debugGroupMarkerName", "_debugDestinationMarkerName", "_debugSubAreaMarkerName"];
-
-_group = [_this, 0, grpNull] call BIS_fnc_param;
-_searchAreaMarkerName = [_this, 1, grpNull] call BIS_fnc_param;
-_firstPos = [_this, 2, [0,0,0]] call BIS_fnc_param;
-_debug = [_this, 3, false] call BIS_fnc_param;
 
 _subAreaSearchTimeSec = 180; // How long time the search group will search the area where enemy was last seen
 _subAreaSize = 100; // Size (width and height) of the sub area

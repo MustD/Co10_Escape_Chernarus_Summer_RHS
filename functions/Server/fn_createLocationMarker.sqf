@@ -1,7 +1,5 @@
-private["_markerName","_markerPosition","_markerType","_marker","_trigger","_activation"];
-_markerName = [_this,0] call bis_fnc_param;
-_markerPosition = [_this,1] call bis_fnc_param;
-_markerType = [_this,2] call bis_fnc_param;
+params ["_markerName", "_markerPosition", "_markerType"];
+private["_marker","_trigger","_activation"];
 
 _marker = createMarker [_markerName, _markerPosition];
 _marker setMarkerShape "ICON";
@@ -16,4 +14,3 @@ if(Param_RevealMarkers == 0) then {
 } else {
 	_marker setMarkerType _markerType;
 };
-

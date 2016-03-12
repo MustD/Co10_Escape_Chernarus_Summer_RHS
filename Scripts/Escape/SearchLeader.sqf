@@ -42,7 +42,7 @@ _markerState = "SMALL";
 _timeUntilReportToHQSec = _minTimeUntilReportToHQSec + random (_maxTimeUntilReportToHQSec - _minTimeUntilReportToHQSec);
 
 if (A3E_Debug) then {
-    player sideChat "Starting search leader...";
+	player sideChat "Starting search leader...";
 };
 
 
@@ -60,18 +60,18 @@ _trigger2 setTriggerStatements["this", "a3e_var_SearchLeader_Detected = true;", 
 
 // Start thread that sets detected by civilian
 [] spawn {
-    while {true} do {
-        if (a3e_var_Escape_SearchLeader_civilianReporting) then {
-            {
-                if (side _x == civilian && _x distance ((call A3E_fnc_GetPlayers) select 0) <300) exitWith {
-                    a3e_var_SearchLeader_Detected = true;
-                    a3e_var_Escape_SearchLeader_ReportingCivilian = _x;
-                };
-            } foreach allUnits;
-        };
-
-        sleep 5;
-    };
+	a3e_var_Escape_SearchLeader_ReportingCivilian = objNull;
+	while {true} do {
+		if (a3e_var_Escape_SearchLeader_civilianReporting) then {
+			{
+				if (side _x == civilian && _x distance ((call A3E_fnc_GetPlayers) select 0) <300) exitWith {
+					a3e_var_Escape_SearchLeader_ReportingCivilian = _x;
+					a3e_var_SearchLeader_Detected = true;
+				};
+			} foreach allUnits;
+		};
+		sleep 5;
+	};
 };
 
 //waitUntil {a3e_var_SearchLeader_Detected};
@@ -125,7 +125,7 @@ while {1 == 1} do {
 									_detectedUnit = _x;
 									_detectedUnitsPosition = _enemysSupposedPos;
 									_unitThatDetected = _leader;
-									_reportingUnit = (units group _unitThatDetected) select floor random count (units group _unitThatDetected);
+									_reportingUnit = (units group _unitThatDetected) call BIS_fnc_selectRandom;
 									_unitThatDetectedPositionAccuracy = _positionAccuracy;
 
 									//"SmokeShellGreen" createVehicle _enemysSupposedPos;

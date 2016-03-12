@@ -25,20 +25,20 @@ if (isNil "paramsArray") then
 
 		};
 	};
-	
+
 	//Compile Params into Variables
 	call AT_fnc_ParamsToVar;
-	
+
 private["_paramLoading","_params"];
 _paramLoading = Param_Loadparams;
-switch (_paramLoading) do 
-{ 
-  case 0: 
+switch (_paramLoading) do
+{
+  case 0:
   {
     ["Saving parameters."] call a3e_fnc_rptLog;
-    uiNamespace setVariable ["A3E_SavedParams", paramsArray];    
-  }; 
-  case 1: 
+    uiNamespace setVariable ["A3E_SavedParams", paramsArray];
+  };
+  case 1:
   {
       //Load params if existing in UINamespace
       _params = uiNamespace getVariable ["A3E_SavedParams",[]];
@@ -50,18 +50,18 @@ switch (_paramLoading) do
           paramsArray = _params;
           publicvariable "paramsArray";
       };
-  }; 
-  case 2: 
+  };
+  case 2:
   {
       "Using manual parameters." call a3e_fnc_rptLog;
-  }; 
+  };
 };
 
 
-	//Reompile Params into Variables because they may have changed
+	//Recompile Params into Variables because they may have changed
 	call AT_fnc_ParamsToVar;
 
 
 A3E_ParamsParsed = true;
 publicVariable "A3E_ParamsParsed";
-//[paramsArray,"a3e_fnc_WriteParamBriefing",true,true] call BIS_fnc_MP;
+//paramsArray remoteExec ["a3e_fnc_WriteParamBriefing", 0, true];

@@ -46,9 +46,7 @@ pdth_mr_deep_copy_w_replace = {
 					};
 				};
 			} else {
-				private ["_repls", "_replaceWhat"];
-				_repls = [_this, 1, [], [[]]] call BIS_fnc_param;
-				_replaceWhat = _this select 0;
+				params ["_replaceWhat", ["_repls", [], [[]]]];
 				if (isNil "_replaceWhat") then {
 					scopeName "nilSN";
 					{
@@ -138,15 +136,11 @@ pdth_mr_check_stop_vars = {
 		if ((typeName _this) == "ARRAY") then {
 			{ // forEach _this;
 				if ((typeName _x) == "ARRAY") then {
-					private ["_varArr", "_name"];
-					_varArr = _x;
-					_name = [_varArr, 0, "", [""]] call BIS_fnc_param;
+					private _name = _x param [0, "", [""]];
 					if (_name != "") then {
-						private "_objs";
-						_objs = [_varArr, 2, [], [[]]] call BIS_fnc_param;
+						private _objs = _x param [2, [], [[]]];
 						if ((count _objs) > 0) then {
-							private "_values";
-							_values = [_varArr, 1, [], [[]]] call BIS_fnc_param;
+							private _values = _x param [1, [], [[]]];
 							if ((count _values) > 0) then {
 								{ // forEach _objs;
 									private ["_objVar", "_obj"];
@@ -207,10 +201,9 @@ pdth_mr_check_repack_player = {
 
 		Return: Boolean
 	*/
-	private ["_isUnconscious", "_runs", "_result", "_target", "_caller"];
+	params [["_target", objNull, [objNull]], ["_caller", objNull, [objNull]]];
+	private ["_isUnconscious", "_runs", "_result"];
 	_result = false;
-	_target = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
-	_caller = [_this, 1, objNull, [objNull]] call BIS_fnc_param;
 	// fastest conditions to check go first, other will be short-circuited
 	if ((!(isNull _target)) && (!(isNull _caller)) && (_caller == _target) && (vehicle _target == _target) && (!(captive _target))) then {
 		private "_checkVars";
@@ -237,10 +230,8 @@ pdth_mr_check_cancel_repack = {
 
 		Return: Boolean
 	*/
-	private ["_result", "_target", "_caller"];
-	_result = false;
-	_target = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
-	_caller = [_this, 1, objNull, [objNull]] call BIS_fnc_param;
+	params [["_target", objNull, [objNull]], ["_caller", objNull, [objNull]]];
+	private _result = false;
 	// fastest conditions to check go first, other will be short-circuited
 	if ((!(isNull _target)) && (!(isNull _caller)) && (_caller == _target) && (vehicle _target == _target) && (!(captive _target))) then {
 		private "_checkVars";
@@ -253,25 +244,17 @@ pdth_mr_check_cancel_repack = {
 };
 
 pdth_mr_var_updater = {
-	private ["_target", "_var"];
-	_target = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
+	params [["_target", objNull, [objNull]]];
 	if (!(isNull _target)) then {
-		_var = _target call pdth_mr_has_repack;
+		private _var = _target call pdth_mr_has_repack;
 		_target setVariable ["pdth_mr_repack_show_action", _var, !(local _target)];
 	};
 };
 
 pdth_mr_respawn_handler ={
-	private ["_new", "_old", "_idAction"];
-	_old = [_this, 1, objNull, [objNull]] call BIS_fnc_param;
-	if (!(isNull _old)) then {
-		_idAction = _old getVariable ["pdth_mr_action", -1];
-		if (_idAction > 0) then {
-			_old removeAction _idAction;
-		};
-	};
+	params [["_new", objNull, [objNull]]];
+	private ["_idAction"];
 
-	_new = [_this, 0, objNull, [objNull]] call BIS_fnc_param;
 	if (!(isNull _new)) then {
 		//waitUntil {alive _new};
 		_idAction = _new addAction [

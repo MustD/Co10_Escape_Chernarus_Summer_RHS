@@ -40,7 +40,7 @@ a3e_arr_PrisonBackpackWeapons = [
 ];
 
 // Random array. Civilian vehicle classes for ambient traffic. (Can also be set to a faction name).
-a3e_arr_Escape_MilitaryTraffic_CivilianVehicleClasses = ["C_Hatchback_01_F", "C_Hatchback_01_sport_F", "C_Offroad_01_F", "C_Quadbike_01_F", "C_SUV_01_F", "C_Hatchback_01_F", "C_Hatchback_01_sport_F", "C_Offroad_01_F", "C_Quadbike_01_F", "C_SUV_01_F", "C_Van_01_box_F", "C_Van_01_transport_F", "C_Van_01_fuel_F", "C_Heli_Light_01_civil_F"];
+a3e_arr_Escape_MilitaryTraffic_CivilianVehicleClasses = ["C_Hatchback_01_F", "C_Hatchback_01_sport_F", "C_Offroad_01_F", "C_Quadbike_01_F", "C_SUV_01_F", "C_Hatchback_01_F", "C_Hatchback_01_sport_F", "C_Offroad_01_F", "C_Quadbike_01_F", "C_SUV_01_F", "C_Van_01_box_F", "C_Van_01_transport_F", "C_Van_01_fuel_F"];
 
 // Random arrays. Enemy vehicle classes for ambient traffic. (Can also be set to a faction name).
 // Variable _enemyFrequency applies to server parameter, and can be one of the values 1 (Few), 2 (Some) or 3 (A lot).
@@ -200,9 +200,8 @@ a3e_arr_AmmoDepotSpecialWeapons = [
 	["rhs_weap_XM2010_wd", 10, 2, 4, ["rhsusf_5Rnd_300winmag_xm2010"], 9],
 	["rhs_weap_pkp", 50, 1, 3, ["rhs_100Rnd_762x54mmR", "rhs_100Rnd_762x54mmR_green"], 2],
 	["rhs_weap_pkm", 50, 2, 4, ["rhs_100Rnd_762x54mmR","rhs_100Rnd_762x54mmR_green"], 3],
-	["rhs_weap_m249_pip", 10, 1, 2, ["rhsusf_100Rnd_556x45_soft_pouch"], 4]
-	// TR8 requires RHS >= 0.3.8. which requires ArmA3 > 1.42. TODO: check RHS version: how?
-	//, ["rhs_weap_tr8", 50, 1, 2, ["HandGrenade"], 4]
+	["rhs_weap_m249_pip", 10, 1, 2, ["rhsusf_100Rnd_556x45_soft_pouch"], 4],
+	["rhs_weap_tr8", 50, 1, 2, ["HandGrenade"], 4]
 ];
 
 // Weapons and ammo in the launchers box

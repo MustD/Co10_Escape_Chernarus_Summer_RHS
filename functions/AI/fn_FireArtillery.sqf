@@ -1,6 +1,5 @@
-private["_position","_success"];
-_position = [_this,0,[0,0,0],[[]]] call bis_fnc_param;
-
+params [["_position", [0,0,0], [[]], [2,3]]];
+private["_success"];
 
 _success = false;
 {
@@ -40,7 +39,7 @@ _success = false;
 						[_group,_fleepos] spawn a3e_fnc_Flee;
 					};
 				};
-			} foreach AllGroups;	
+			} foreach AllGroups;
 		};
 		_success = true;
 	} else {

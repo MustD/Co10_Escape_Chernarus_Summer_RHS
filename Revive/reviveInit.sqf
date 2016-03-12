@@ -22,7 +22,7 @@ AT_Revive_Debug = false;
 {
     waitUntil {!isNull player};
 
-	[true, objNull] spawn AT_FNC_Revive_InitPlayer;
+	[true] spawn AT_FNC_Revive_InitPlayer;
 
 
 	player addEventHandler
