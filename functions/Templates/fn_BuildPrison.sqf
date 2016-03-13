@@ -25,7 +25,6 @@ _placePrisonObj = {
 		Return: Object: created object
 	*/
 	params [["_clName", "", [""]], ["_x", 0, [0]], ["_y", 0, [0]], ["_zOffArray", ["REL", 0], [[]], [2]], ["_rotDir", 0, [0]],  ["_simul", false, [false]], ["_normalize", false, [false]], ["_vecsDirUp", [[0,1,0], [0,0,1]], [[]], [2]], ["_varName", "", [""]]];
-	diag_log format ["_placePrisonObj: %1", _this];
 	_zOffArray params [["_zType", "REL", [""]], ["_zOff", 0, [0]]];
 	_vecsDirUp params [["_vecDir", [0,1,0], [[]], [3]], ["_vecUp", [0,0,1], [[]], [3]]];
 	private ["_pos", "_z", "_obj"];
@@ -40,7 +39,6 @@ _placePrisonObj = {
 	_obj setPosASL _pos;
 	_obj setDir (_rotateDir+_rotDir);
 	if ((count _this) > 7) then {
-		//diag_log format ["_vecDir: %1; _vecUp: %2", _vecDir, _vecUp];
 		_obj setVectorDirAndUp [_vecDir, [[0,0,0], _vecUp, _rotateDir+_rotDir] call a3e_fnc_RotatePosition];
 	} else {
 		if (_normalize) then {
@@ -112,7 +110,6 @@ _prMaterials = [
 ];
 
 _prMaterial = _prMaterials call BIS_fnc_selectRandom;
-diag_log format ["_prMaterial: %1", _prMaterial];
 
 _prMaterial params [["_wallElem", [], [[]], [3,4,5,6]], ["_gateElem", [], [[]], [2,3,4]], ["_crnrElem", [], [[]], [2,3]]];
 _wallElem params [["_wallElNm", "Land_Wall_Tin_4", [""]], ["_elems", 3, [0]], ["_wallElLn", 4, [0]], ["_wallElWd", 0, [0]], ["_wallElPl", 0, [0]], ["_wallZOff", nil, [0,nil]]];

@@ -78,6 +78,7 @@
 	@todo pass parameters for playSound3D: name, volume, pitch, max hearable distance;
 		test on containers.
 **/
+
 private ["_fnc_setUp_WH"];
 _fnc_setUp_WH = {
 	params [["_ref", objNull, [objNull]]];
@@ -100,7 +101,7 @@ _fnc_setUp_WH = {
 	_ret
 };
 
-params [["_target", objNull, [objNull]], ["_caller", objNull, [objNull]], ["_args", [], [[]]]];
+params [["_target", objNull, [objNull]], ["_caller", objNull, [objNull]], "", ["_args", [], [[]]]];
 private ["_nnT", "_nnC", "_isManT", "_isManC", "_onFootC", "_plC", "_stopVars", "_haveSV", "_localT", "_localC"];
 // ensure we work with local copy and don't expose local _caller
 _stopVars = [_args param [1, [], [[]]], [["_caller", _caller]]] call pdth_mr_deep_copy_w_replace;
